@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 常連さん発見AI 診断ルーム</title>
     
-    <!-- 必要なライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 追加：文字化け(Shift-JIS等)を自動解決するライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
 
     <style>
-        /* --- 基本のスタイル --- */
         body {
             background-color: #FFF0F5; color: #4A4A4A;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
@@ -28,8 +25,16 @@
         
         .explanation-box {
             background-color: #FFF9FA; border-left: 4px solid #FFC0CB;
-            padding: 12px 15px; margin-bottom: 20px; border-radius: 4px; font-size: 14px;
+            padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 14.5px;
         }
+        .explanation-box strong.title { display: block; color: #E91E63; font-size: 16px; margin-bottom: 8px; border-bottom: 1px dashed #FFC0CB; padding-bottom: 4px;}
+        .explanation-box p { margin: 6px 0; }
+        
+        .explanation-blue {
+            background-color: #F0F7FF; border-left: 4px solid #4A90E2;
+        }
+        .explanation-blue strong.title { color: #4A90E2; border-bottom: 1px dashed #A9C9EE; }
+
         .marker {
             background: linear-gradient(transparent 60%, #FFC0CB 60%);
             font-weight: bold; font-size: 18px; color: #E91E63;
@@ -41,9 +46,7 @@
             margin-top: 15px; box-sizing: border-box; text-align: center;
         }
         .btn:hover { background-color: #FF5C83; }
-        .btn-outline {
-            background-color: transparent; color: #4A90E2; border: 2px solid #4A90E2;
-        }
+        .btn-outline { background-color: transparent; color: #4A90E2; border: 2px solid #4A90E2; }
         .btn-outline:hover { background-color: #f0f7ff; }
         
         .link-btn {
@@ -52,7 +55,7 @@
             text-align: center; margin-top: 10px;
         }
         
-        .radio-group { margin-bottom: 20px; }
+        .radio-group { margin-bottom: 20px; background: #fafafa; padding: 15px; border-radius: 8px; }
         .radio-group label { display: block; margin: 12px 0; cursor: pointer; font-weight: bold;}
         input[type="file"] { margin: 10px 0; padding: 10px; border: 1px dashed #FF7A9A; border-radius: 8px; width: 100%; box-sizing: border-box;}
         input[type="password"] { padding: 12px; border: 1px solid #FFC0CB; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 16px;}
@@ -67,7 +70,7 @@
         
         #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
         #resultArea { display: none; }
-        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
+        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.8;}
         
         .stat-section {
             background-color: #f4f6f8; border: 1px solid #dcdfe6; border-radius: 6px;
@@ -80,24 +83,17 @@
         .stat-table td:first-child { text-align: left; font-weight: bold; }
         .equation { background: #fff; padding: 10px; border-left: 4px solid #4A90E2; margin-bottom: 15px; line-height: 1.8;}
 
-        /* --- 🖨️ 印刷＆PDF保存用の最強CSS（画面には見えないが印刷時に発動） --- */
         @media print {
             body { background-color: #FFFFFF; color: #000; padding: 0; }
             .container { box-shadow: none; padding: 0; max-width: 100%; }
-            /* 印刷時に隠す要素 */
             h1, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, 
-            .explanation-box, hr, #step3, #authArea, #premiumActionArea {
-                display: none !important;
-            }
-            /* レポート部分を整える */
+            .explanation-box, hr, #step3, #authArea, #premiumActionArea { display: none !important; }
             #resultArea { display: block !important; }
             details { background: none; margin: 0; padding: 0; }
-            summary { display: none; } /* 折りたたみボタンを隠す */
-            details > * { display: block !important; } /* 折りたたまれていても強制表示 */
+            summary { display: none; }
+            details > * { display: block !important; }
             canvas { max-width: 100%; height: auto !important; }
             .stat-section { border: 1px solid #999; background: #fff; }
-            
-            /* 印刷用のヘッダーを追加表示 */
             #resultArea::before {
                 content: "【社外秘】リピート要因 AI分析レポート (発行日: " attr(data-date) ")";
                 display: block; font-size: 20px; font-weight: bold; color: #333;
@@ -116,12 +112,17 @@
     <h2 id="step1">🌸 1. データの準備</h2>
     
     <div class="explanation-box">
-        <p><strong>💡 ルールのおさらい</strong></p>
-        <p>お店の過去データ（CSV）をご用意ください。<strong>一番右の列は必ず「1＝はい（来た）」「0＝いいえ（来なかった）」</strong>にしてください。</p>
+        <strong class="title">❓ 何を準備して、それが何に役立つの？</strong>
+        <p>お店の過去のデータ（使った金額や、頼んだメニューなど）をまとめた表（CSV）をご用意ください。<br>
+        このデータを使うことで、<strong>「どんな行動をしたお客様が、次も来てくれる（常連になる）確率が高いのか」</strong>という隠れた法則を、AIが自動で見つけ出します！</p>
+        
+        <strong class="title" style="margin-top: 15px;">💡 一番大事なルール「0と1のお約束」</strong>
+        <p>AIは「デザートを頼んだ」「クーポンを使った」という文字を読むのが苦手です。そのため、データを<strong>「1＝はい」「0＝いいえ」</strong>という数字に置き換えてあげてください。（例：デザートを頼んだら「1」、頼まなかったら「0」）</p>
+        <p>※一番右の列は、必ず<strong>「次回来店したか（1=来た / 0=来なかった）」</strong>という結果のデータにしてください。</p>
     </div>
 
     <div class="radio-group">
-        <label><input type="radio" name="dataSource" value="sample" checked> ✨ サンプルデータでまずは試す（おすすめ！）</label>
+        <label><input type="radio" name="dataSource" value="sample" checked> ✨ 架空のカフェのデータでまずは試す（おすすめ！）</label>
         <label><input type="radio" name="dataSource" value="csv"> 📁 自分のデータ(CSV)をアップロードする</label>
     </div>
 
@@ -137,17 +138,27 @@
 
     <h2>🪄 2. AI無料診断プレビュー</h2>
     <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
-    <div id="loading">✨ AI（ロジスティック回帰モデル）がデータを学習しています...</div>
+    <div id="loading">✨ AIがお客様のデータを読み解いています...</div>
 
     <div id="resultArea">
+        <!-- AIからの結論メッセージ -->
         <div id="conclusion" class="success-msg"></div>
         
-        <p style="font-weight:bold; margin-top:20px;">▼ 要素ごとの影響力グラフ</p>
+        <p style="font-weight:bold; margin-top:20px; font-size:18px;">▼ 要素ごとの影響力グラフ</p>
         <canvas id="myChart"></canvas>
 
-        <details id="statDetailsWrapper" open>
+        <!-- オッズ比の優しい解説 -->
+        <div class="explanation-box explanation-blue" style="margin-top: 15px;">
+            <strong class="title">💡 グラフの見方と「リピート倍率（オッズ比）」について</strong>
+            <p>グラフの棒が<strong>右に伸びている項目ほど、リピートに繋がりやすい「良い行動」</strong>です。<br>
+            ※棒をタップ（クリック）すると詳しい数字が見れます。</p>
+            <p>この効果の大きさを表すのが<strong>「リピート倍率（専門用語でオッズ比）」</strong>です。<br>
+            例えばリピート倍率が「2.0倍」なら、その行動をした人は、しなかった人に比べて<strong>2倍も次に来てくれやすい（常連になりやすい）</strong>という強力な武器になります！</p>
+        </div>
+
+        <details id="statDetailsWrapper">
             <summary>📊 専門家向け：計算根拠と詳細な統計情報（ガチ勢用）</summary>
-            <div class="explanation-box" style="margin-top: 15px;">
+            <div class="explanation-box" style="margin-top: 15px; border-left-color:#ccc; background:#f9f9f9;">
                 <p>当分析はロジスティック回帰（Logistic Regression）を使用し、ブラウザ上でヘッセ行列を用いた最尤推定・分散共分散行列の算出を行っています。</p>
             </div>
             <div class="stat-section" id="statDetails"></div>
@@ -157,7 +168,6 @@
 
         <h2 id="step3">🎁 3. プロ仕様の詳細レポートを発行 (500円)</h2>
         
-        <!-- ▼ 未購入時の画面 ▼ -->
         <div id="authArea">
             <p>融資や社内会議に使える「PDF保存機能」と、LINE等で共有できる「テキストコピー機能」を解放します💌</p>
             <a href="https://square.link/YOUR_DUMMY_LINK" target="_blank" class="link-btn">💳 Squareで決済してパスコードを入手する（500円）</a>
@@ -165,7 +175,6 @@
             <button class="btn" id="authBtn" style="background-color: #2E7D32;">🔓 パスコードで機能を解放する</button>
         </div>
 
-        <!-- ▼ 購入後の画面（最初は非表示） ▼ -->
         <div id="premiumActionArea" style="display: none;">
             <div class="success-msg" style="background-color: #FFF3CD; color: #856404;">
                 <strong>✅ パスコード認証成功！</strong><br>
@@ -183,9 +192,8 @@
     let currentData = [];
     let chartInstance = null;
     let topFactorName = "";
-    let analysisResultData = null; // コピー機能用に保持
+    let analysisResultData = null;
 
-    // 日付をセット（印刷プレビュー用）
     const today = new Date();
     document.getElementById('resultArea').setAttribute('data-date', `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`);
 
@@ -228,27 +236,16 @@
         });
     });
 
-    // 🌟 文字化け完全防御付きのCSV読み込み
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            // 1. ファイルをバイナリとして読み込む
             const uint8Array = new Uint8Array(event.target.result);
-            
-            // 2. 文字コードを自動判定（Shift-JISかUTF-8か）
             const detected = Encoding.detect(uint8Array);
-            
-            // 3. AIが確実に読めるUnicode(UTF-8)に変換！
-            const unicodeString = Encoding.convert(uint8Array, {
-                to: 'UNICODE',
-                from: detected || 'AUTO',
-                type: 'string'
-            });
+            const unicodeString = Encoding.convert(uint8Array, { to: 'UNICODE', from: detected || 'AUTO', type: 'string' });
 
-            // 4. 変換済みの綺麗な文字列をPapaParseに渡す
             Papa.parse(unicodeString, {
                 header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
@@ -264,13 +261,11 @@
                 }
             });
         };
-        // バイナリとして読み込み開始
         reader.readAsArrayBuffer(file);
     });
 
     generateSampleData();
 
-    // ▼▼▼ ガチ統計演算ロジック (変更なし) ▼▼▼
     function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
     function normalCDF(x) {
         let t = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -374,7 +369,6 @@
             dfNull: m - 1, dfResid: m - k_params
         };
     }
-    // ▲▲▲ ガチ統計演算ロジック終了 ▲▲▲
 
     function getSignificanceMark(p) {
         if(p === null) return "";
@@ -406,15 +400,19 @@
             let topPositive = importanceData.find(d => d.coef > 0);
             topFactorName = topPositive ? topPositive.name : importanceData[0].name;
 
-            // コピー用にデータを保持
             analysisResultData = { topFactor: topFactorName, acc: (res.accuracy * 100).toFixed(1), items: importanceData };
 
+            // ▼ ユーザーに語りかける文脈作り（ここで入力された項目名を使う） ▼
+            let usedFeaturesText = featureNames.join("」や「");
+            
             document.getElementById('conclusion').innerHTML = `
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🎉 AIによる診断が完了しました！</div>
-                お店のファンを増やす一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> です！
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color:#E91E63;">🎉 AIによる診断が完了しました！</div>
+                「1.データの準備」で用意していただいたデータ（「${usedFeaturesText}」）をAIが比較・計算した結果……<br><br>
+                お店のファンを増やす（リピートしてもらう）ための最大の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！<br>
+                明日からこの要素を意識して接客やサービスを行うと、常連客がグッと増える可能性が高いです。
             `;
             
-            drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef));
+            drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef), importanceData.map(d => d.oddsRatio));
 
             let eqText = `logit(p) = ${res.bias.toFixed(4)} <br>`;
             featureNames.forEach((name, i) => {
@@ -478,7 +476,8 @@
         }, 1200);
     });
 
-    function drawChart(labels, data) {
+    // ▼ グラフを触ると「リピート倍率（オッズ比）」がポップアップで出るように改修 ▼
+    function drawChart(labels, coefData, oddsData) {
         const ctx = document.getElementById('myChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(ctx, {
@@ -487,60 +486,62 @@
                 labels: labels,
                 datasets: [{
                     label: 'リピートへの影響力',
-                    data: data,
-                    backgroundColor: data.map(v => v > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
-                    borderColor: data.map(v => v > 0 ? '#FF7A9A' : '#6495ED'),
-                    borderWidth: 1
+                    data: coefData,
+                    backgroundColor: coefData.map(v => v > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
+                    borderColor: coefData.map(v => v > 0 ? '#FF7A9A' : '#6495ED'),
+                    borderWidth: 1,
+                    // オッズ比のデータを裏に持たせておく
+                    oddsDataArray: oddsData 
                 }]
             },
-            options: { indexAxis: 'y', responsive: true }
+            options: { 
+                indexAxis: 'y', 
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let odds = context.dataset.oddsDataArray[context.dataIndex].toFixed(2);
+                                return `リピート倍率: ${odds}倍`;
+                            }
+                        }
+                    }
+                }
+            }
         });
     }
 
-    // 🔓 決済パスコード認証
     document.getElementById('authBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
         if (code === "2026BASE") {
-            // パスコード正解でエリアを切り替え
             document.getElementById('authArea').style.display = 'none';
             document.getElementById('premiumActionArea').style.display = 'block';
-            
-            // 印刷時に詳細が見えるようにアコーディオンを開く
             document.getElementById('statDetailsWrapper').open = true;
         } else {
             alert("💦 パスコードが間違っています。Squareの決済完了画面をご確認ください。");
         }
     });
 
-    // 🖨️ 印刷＆PDF保存（最強の代替機能）
     document.getElementById('printBtn').addEventListener('click', () => {
-        // detailを確実に開いた状態で印刷ダイアログを呼ぶ
         document.getElementById('statDetailsWrapper').open = true;
-        
-        // ちょっと待ってから印刷を呼ぶ（グラフの再描画などを待つため）
         setTimeout(() => { window.print(); }, 300);
     });
 
-    // 📋 テキストコピー機能（現場スタッフ共有用）
     document.getElementById('copyTextBtn').addEventListener('click', () => {
         if(!analysisResultData) return;
-        
         let text = `【📊 店舗リピート要因 AI分析レポート】\n\n`;
         text += `🎯 最もリピートに繋がる要素：\n「 ${analysisResultData.topFactor} 」\n\n`;
-        
         text += `▼ 要素ごとのリピートしやすさ（オッズ比）\n`;
         analysisResultData.items.forEach(d => {
             let effect = d.oddsRatio >= 1.2 ? "💮効果大" : d.oddsRatio <= 0.8 ? "⚠️逆効果" : "➖普通";
             text += `・${d.name}: ${d.oddsRatio.toFixed(2)}倍 (${effect})\n`;
         });
-        
         text += `\n🤖 AIの予測正解率: ${analysisResultData.acc}%\n`;
-        text += `※この分析はロジスティック回帰を用いて算出されました。`;
-
+        
         navigator.clipboard.writeText(text).then(() => {
             alert("✅ コピーしました！\nLINEやSlackのグループにそのまま貼り付けて、スタッフへの共有にご活用ください。");
         }).catch(err => {
-            alert("コピーに失敗しました。お使いのブラウザが対応していない可能性があります。");
+            alert("コピーに失敗しました。");
         });
     });
 </script>

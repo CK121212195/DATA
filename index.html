@@ -4,26 +4,40 @@
     <meta charset="UTF-8" />
     <title>AIリピート診断アプリ</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.css"/>
+    <style>
+      /* --- 起動中のローディング画面 --- */
+      body { margin: 0; background-color: #FFF0F5; font-family: sans-serif; }
+      #loading {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #FFF0F5; color: #4A4A4A;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 9999; transition: opacity 0.5s;
+      }
+      .spinner {
+        border: 6px solid #FFE4E1; border-top: 6px solid #FF7A9A;
+        border-radius: 50%; width: 60px; height: 60px;
+        animation: spin 1s linear infinite; margin-bottom: 20px;
+      }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
+    <!-- アプリ起動までの間表示される画面 -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <h2>🌸 AI診断ルームを準備中...</h2>
+      <p>初回はAIエンジンを読み込むため、数十秒かかります☕</p>
+    </div>
+
+    <!-- ここにアプリが展開されます -->
     <div id="root"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.js"></script>
     <script>
       stlite.mount({
         requirements: ["pandas", "numpy", "scikit-learn"],
         entrypoint: "streamlit_app.py",
         files: {
-          // --- 🎨 デザイン設定ファイル（明るく可愛いテーマを強制） ---
-          ".streamlit/config.toml": `
-[theme]
-base="light"
-primaryColor="#FF7A9A"
-backgroundColor="#FFFFFF"
-secondaryBackgroundColor="#FFF0F5"
-textColor="#4A4A4A"
-font="sans serif"
-          `,
-          // --- 🐍 メインのPythonコード ---
           "streamlit_app.py": `
 import streamlit as st
 import pandas as pd
@@ -34,7 +48,40 @@ import time
 # 画面設定
 st.set_page_config(page_title="常連さん発見AI", page_icon="🌷", layout="centered")
 
-# タイトル（絵文字と文体を柔らかく）
+# カスタムCSS（ダークモードでも強制的に明るく可愛いUIにする）
+st.markdown("""
+<style>
+    /* 背景と文字色 */
+    .stApp { background-color: #FFF0F5 !important; }
+    .stApp, .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #4A4A4A !important; }
+    
+    /* 分析ボタンの色 */
+    div.stButton > button:first-child {
+        background-color: #FF7A9A !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold;
+    }
+    
+    /* リンクボタンの色 */
+    a[data-testid="stLinkButton"] button {
+        background-color: #FF7A9A !important;
+        color: white !important;
+        border: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# アプリの起動が完了したら、ローディング画面を消す魔法のスクリプト
+st.markdown("""
+<script>
+    const loading = window.parent.document.getElementById('loading');
+    if(loading) { loading.style.display = 'none'; }
+</script>
+""", unsafe_allow_html=True)
+
+# タイトル
 st.title("🌷 常連さん発見AI 診断ルーム")
 st.write("お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨ 難しい計算はお任せください！")
 
@@ -44,7 +91,6 @@ data_source = st.radio("分析するデータを選んでみましょう👇", [
 df = None
 if "サンプル" in data_source:
     st.info("💡 架空のカフェのデータ（100件）をご用意しました。このまま進んでみてくださいね！")
-    # ダミーデータ生成
     np.random.seed(42)
     df = pd.DataFrame({
         "客単価(円)": np.random.randint(800, 3000, 100),
@@ -52,7 +98,6 @@ if "サンプル" in data_source:
         "デザート注文(1=あり)": np.random.choice([0, 1], 100),
         "クーポン利用(1=あり)": np.random.choice([0, 1], 100),
     })
-    # ロジック生成（デザートとクーポンが影響大）
     prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(1=あり)"] + 0.5*df["クーポン利用(1=あり)"])))
     df["次回来店したか(1=はい)"] = (np.random.rand(100) < prob).astype(int)
     st.dataframe(df.head(3), use_container_width=True)
@@ -66,35 +111,36 @@ else:
 if df is not None:
     st.markdown("### 🪄 2. AI無料診断プレビュー")
     if st.button("🔮 ワンタップで分析スタート！", type="primary"):
-        with st.spinner("AIがお客様の心を読み解いています... (初回のみ少し時間がかかります☕)"):
+        with st.spinner("AIがお客様の心を読み解いています... (少しお待ちください☕)"):
             time.sleep(1.5)
             
-            # ロジスティック回帰分析の実行
-            X = df.drop("次回来店したか(1=はい)", axis=1)
-            y = df["次回来店したか(1=はい)"]
-            
-            model = LogisticRegression()
-            model.fit(X, y)
-            accuracy = model.score(X, y) # 正解率
-            
-            # 回帰係数とオッズ比（影響度）の計算
-            coef = model.coef_[0]
-            odds_ratios = np.exp(coef)
-            
-            importance = pd.DataFrame({
-                "分析要素": X.columns, 
-                "影響スコア(回帰係数)": coef,
-                "リピート倍率(オッズ比)": odds_ratios
-            })
-            importance = importance.sort_values(by="影響スコア(回帰係数)", ascending=False)
-            
-            # セッションに結果を保存
-            st.session_state["analyzed"] = True
-            st.session_state["top_factor"] = importance.iloc[0]["分析要素"]
-            st.session_state["importance"] = importance
-            st.session_state["accuracy"] = accuracy
+            try:
+                # どんなCSVでも「一番右の列」を予測対象にする
+                X = df.drop(df.columns[-1], axis=1)
+                y = df[df.columns[-1]]
+                
+                model = LogisticRegression()
+                model.fit(X, y)
+                accuracy = model.score(X, y)
+                
+                coef = model.coef_[0]
+                odds_ratios = np.exp(coef)
+                
+                importance = pd.DataFrame({
+                    "分析要素": X.columns, 
+                    "影響スコア(回帰係数)": coef,
+                    "リピート倍率(オッズ比)": odds_ratios
+                })
+                importance = importance.sort_values(by="影響スコア(回帰係数)", ascending=False)
+                
+                st.session_state["analyzed"] = True
+                st.session_state["top_factor"] = importance.iloc[0]["分析要素"]
+                st.session_state["importance"] = importance
+                st.session_state["accuracy"] = accuracy
+            except Exception as e:
+                st.error("💦 エラーが発生しました。データの形式を確認してください。（※一番右の列が「予測したい結果」になっている必要があります）")
 
-# 分析結果の表示エリア
+# 分析結果の表示
 if st.session_state.get("analyzed"):
     top = st.session_state["top_factor"]
     acc = st.session_state["accuracy"]
@@ -105,11 +151,11 @@ if st.session_state.get("analyzed"):
     st.write("▼ 要素ごとの影響力グラフ")
     st.bar_chart(imp_df.set_index("分析要素")["影響スコア(回帰係数)"])
     
-    # 🌟 エビデンス（嘘だと思われないための専門データ）
+    # エビデンス
     with st.expander("📊 専門家向け：AI分析のエビデンス（計算根拠）"):
         st.write("当サービスは、統計学における**「ロジスティック回帰分析」**を用いて結果を算出しています。")
         st.markdown(f"**■ モデルの予測正解率 (Accuracy):** `{acc*100:.1f}%`")
-        st.write("各要素が「リピート確率」にどれだけ影響を与えているかの詳細数値（オッズ比など）です。数値が大きいほど影響力が強いことを示します。")
+        st.write("各要素が「リピート確率」にどれだけ影響を与えているかの詳細数値（オッズ比）です。")
         st.dataframe(imp_df, use_container_width=True)
     
     st.markdown("---")
@@ -124,16 +170,8 @@ if st.session_state.get("analyzed"):
     if passcode == "2026BASE":
         st.success("✅ 決済が確認できました！ありがとうございます💕")
         
-        report_text = f"""【AIリピート診断 詳細レポート】
-
-■ 結論:
-あなたのお店で最もリピートに貢献している要素は「{top}」です。
-（AIの予測正解率: {acc*100:.1f}%）
-
-■ 明日からのアクションプラン:
-この要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、お客様への声掛けを徹底してください。
-
-※この分析はお客様の端末上で安全に計算されました。データは外部に送信されていません。"""
+        # エラー回避のためバックスラッシュで改行を表現
+        report_text = f"【AIリピート診断 詳細レポート】\\n\\n■ 結論:\\nあなたのお店で最もリピートに貢献している要素は「{top}」です。\\n（AIの予測正解率: {acc*100:.1f}%）\\n\\n■ 明日からのアクションプラン:\\nこの要素を伸ばすためのキャンペーンを企画し、お客様への声掛けを徹底してください。\\n\\n※この分析はお客様の端末上で安全に計算されました。"
         
         st.download_button(
             label="📄 詳細レポートをダウンロード",
@@ -146,7 +184,7 @@ if st.session_state.get("analyzed"):
         st.error("パスコードが間違っているようです💦")
 `
         }
-      }, document.getElementById("root"));
+      });
     </script>
   </body>
 </html>

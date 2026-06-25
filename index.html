@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 常連さん発見AI 診断ルーム</title>
     
-    <!-- 必要なライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PDF生成ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -66,11 +64,11 @@
         #resultArea { display: none; }
         .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
 
-        /* PDFレポート用の隠し要素（普段は画面外に隠す） */
+        /* 💡 修正ポイント：画面外に飛ばすのをやめ、普段は完全にdisplay:noneで隠す */
         #pdfReportContainer {
-            position: absolute; left: -9999px; top: 0;
-            width: 800px; padding: 40px; background: white; color: #333; font-family: sans-serif;
-            box-sizing: border-box;
+            display: none; 
+            width: 100%; max-width: 800px; margin: 0 auto; background: white; 
+            padding: 40px; color: #333; font-family: sans-serif; box-sizing: border-box;
         }
         .report-section { margin-bottom: 30px; }
         .report-h1 { color: #E91E63; text-align: center; font-size: 28px; border-bottom: 3px solid #FFC0CB; padding-bottom: 10px;}
@@ -84,11 +82,11 @@
 </head>
 <body>
 
-<div class="container">
+<!-- メインのUI画面 -->
+<div class="container" id="mainUiContainer">
     <h1>🌷 常連さん発見AI 診断ルーム</h1>
     <p>お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨</p>
 
-    <!-- 1. データ準備 -->
     <h2>🌸 1. データの準備</h2>
     <div class="explanation-box">
         <p><strong>❓ 何を準備すればいいの？</strong></p>
@@ -110,15 +108,12 @@
         <div class="table-wrapper"><table id="previewTable"></table></div>
     </div>
 
-    <!-- 2. 分析実行 -->
     <h2>🪄 2. AI無料診断プレビュー</h2>
     <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
     <div id="loading">✨ AIがデータを読み解いています... (ちょっと待ってね☕)</div>
 
-    <!-- 3. 結果表示 -->
     <div id="resultArea">
         <div id="conclusion" class="success-msg"></div>
-        
         <p>▼ 要素ごとの影響力グラフ</p>
         <canvas id="myChart"></canvas>
 
@@ -147,13 +142,13 @@
 </div>
 
 <!-- ========================================== -->
-<!-- 📄 PDF出力用の隠しテンプレート（ガチ仕様） -->
+<!-- 📄 PDF出力用のレポートテンプレート -->
 <!-- ========================================== -->
 <div id="pdfReportContainer">
     <h1 class="report-h1">AI リピート分析 詳細レポート</h1>
     <p style="text-align: right; color: #888;">発行日: <span id="reportDate"></span></p>
 
-    <!-- 前半：バカでも分かる可愛い解説 -->
+    <!-- 前半 -->
     <div class="report-section">
         <h2 class="report-h2">🎀 1. 分析の結論とアクションプラン</h2>
         <div style="background: #FFF0F5; padding: 20px; border-radius: 8px; margin-top: 15px;">
@@ -172,7 +167,7 @@
         </div>
     </div>
 
-    <!-- 後半：専門家・銀行も唸るガチの統計指標 -->
+    <!-- 後半 -->
     <div class="report-section">
         <h2 class="report-h2">📊 2. 統計分析 詳細エビデンス（専門家向け）</h2>
         <p class="report-p">本レポートの算出には、目的変数を「次回来店(0/1)」とした二項ロジスティック回帰モデルを採用しています。モデルの予測正解率(Accuracy)は <strong><span id="reportAcc"></span>%</strong> です。</p>
@@ -183,9 +178,7 @@
 
         <p class="report-p" style="margin-top: 20px;"><strong>■ パラメータ推定値および統計指標</strong><br>
         <span style="font-size: 11px; color: #888;">※ P値(Pr > |z|)が 0.05 未満であれば、統計的に有意（偶然ではない）と判断されます。</span></p>
-        <table class="report-table" id="reportStatTable">
-            <!-- JSでテーブルの中身を自動生成 -->
-        </table>
+        <table class="report-table" id="reportStatTable"></table>
     </div>
 </div>
 
@@ -194,7 +187,6 @@
     let chartInstance = null; let topFactorName = ""; let modelAccuracy = 0;
     let globalStats = []; let globalBias = 0; let globalFeatureNames = [];
 
-    // --- ガチ統計用の数学関数群（P値や逆行列を自作） ---
     function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
     function normalCDF(x) {
         let t = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -242,14 +234,12 @@
             bias -= (lr * db) / m;
         }
         
-        // 元のスケールに戻す
         let origWeights = Array(n).fill(0); let origBias = bias;
         for(let j=0; j<n; j++) {
             origWeights[j] = weights[j] / stds[j];
             origBias -= origWeights[j] * means[j];
         }
 
-        // P値や信頼区間の計算（Hessian行列）
         let H = []; for(let i=0; i<=n; i++) H[i] = Array(n+1).fill(0);
         let correct = 0;
         for(let i=0; i<m; i++) {
@@ -259,7 +249,7 @@
             let xi = [1].concat(X[i]);
             for(let r=0; r<=n; r++) for(let c=0; c<=n; c++) H[r][c] += xi[r] * xi[c] * w;
         }
-        for(let k=0; k<=n; k++) H[k][k] += 1e-4; // 正則化
+        for(let k=0; k<=n; k++) H[k][k] += 1e-4; 
         let H_inv = invertMatrix(H);
         
         let stats = [];
@@ -276,7 +266,6 @@
         return { bias: origBias, stats: stats, accuracy: correct / m };
     }
 
-    // --- データの初期化とUI制御 ---
     function generateSampleData() {
         currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(1=はい)"];
         currentData = [];
@@ -326,7 +315,6 @@
     });
     generateSampleData();
 
-    // --- 分析実行 ---
     document.getElementById('analyzeBtn').addEventListener('click', () => {
         if (currentData.length === 0) return alert("データがありません！");
         document.getElementById('analyzeBtn').style.display = 'none';
@@ -384,7 +372,6 @@
             document.getElementById('analyzeBtn').style.display = 'block';
             document.getElementById('resultArea').style.display = 'block';
 
-            // グラフのアニメーション完了後に画像を生成して隠しPDFレポートにセット
             setTimeout(() => {
                 document.getElementById('reportChartImg').src = chartInstance.toBase64Image();
             }, 1000);
@@ -409,23 +396,30 @@
         });
     }
 
-    // --- PDFダウンロード処理 ---
+    // 💡 修正ポイント：PDF生成時にメイン画面を隠し、レポートを確実に見える状態にしてから撮影する
     document.getElementById('downloadBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
         if (code === "2026BASE") {
+            // ローディング演出
             alert("✅ 決済が確認できました！\nPDFレポートを生成します（数秒かかります）。");
             
+            const mainUi = document.getElementById('mainUiContainer');
             const reportEl = document.getElementById('pdfReportContainer');
-            reportEl.style.display = 'block'; // PDF化のために一時的に表示化（画面外）
+            
+            // 一時的にメイン画面を消して、レポートを画面のど真ん中に表示させる（確実な描画のため）
+            mainUi.style.display = 'none';
+            reportEl.style.display = 'block';
             
             html2pdf().set({
-                margin: 10,
+                margin: 15,
                 filename: 'AI_Repeat_Report.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
+                html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).from(reportEl).save().then(() => {
-                reportEl.style.display = 'none'; // 非表示に戻す
+                // PDF出力が終わったら、レポートを隠してメイン画面を復活させる
+                reportEl.style.display = 'none';
+                mainUi.style.display = 'block';
             });
             
         } else {

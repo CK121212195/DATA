@@ -168,7 +168,7 @@
         <details id="statDetailsWrapper">
             <summary>📊 専門家向け：計算根拠（回帰分析グラフ・統計データ）</summary>
             
-            <p style="font-weight:bold; margin-top:15px; font-size:15px; color:#333; text-align:center;">▼ 回帰曲線グラフ（トップ変数と目的変数の関係）</p>
+            <p style="font-weight:bold; margin-top:15px; font-size:15px; color:#333; text-align:center;">▼ AI予測の精度グラフ（AIの予測値 vs 実際のデータ）</p>
             <div style="max-width: 600px; margin: 0 auto;">
                 <canvas id="regressionChart"></canvas>
             </div>
@@ -463,8 +463,8 @@
 
             drawChart(importanceData, isAmount);
             
-            // ▼ 回帰分析の散布図グラフ描画 ▼
-            drawRegressionChart(X, y, featureNames, topFactorName, res, currentAnalysisType);
+            // ▼ 回帰分析の散布図グラフ描画（ここを修正） ▼
+            drawRegressionChart(X, y, res, currentAnalysisType);
 
             // ガチ統計表と回帰式の生成
             let eqText = currentAnalysisType === "logistic" ? `logit(p) = ${res.bias.toFixed(4)} <br>` : `y = ${formatNumber(res.bias)} <br>`;
@@ -540,62 +540,76 @@
         });
     }
 
-    function drawRegressionChart(X, y, featureNames, topFactorName, res, type) {
+    // ▼▼ ここが「実測値 vs 予測値」になるよう修正された関数 ▼▼
+    function drawRegressionChart(X, y, res, type) {
         const ctx = document.getElementById('regressionChart').getContext('2d');
         if (regChartInstance) regChartInstance.destroy();
         
-        let topIndex = featureNames.indexOf(topFactorName);
-        let scatterData = X.map((row, i) => ({ x: row[topIndex], y: y[i] }));
-        
-        let xVals = scatterData.map(d => d.x);
-        let xMin = Math.min(...xVals); let xMax = Math.max(...xVals);
-        
+        let scatterData = [];
         let lineData = [];
-        for(let i=0; i<=50; i++) {
-            let xVal = xMin + (xMax - xMin) * (i / 50);
-            let val = res.bias;
-            for(let j=0; j<X[0].length; j++) {
-                if(j === topIndex) val += res.weights[j] * xVal;
-                else val += res.weights[j] * res.means[j]; // 他の変数は平均で固定
-            }
-            if(type === "logistic") {
-                lineData.push({x: xVal, y: 1 / (1 + Math.exp(-val))});
-            } else {
-                lineData.push({x: xVal, y: val});
-            }
-        }
 
-        regChartInstance = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: '実際のお客様データ',
-                        data: scatterData,
-                        backgroundColor: 'rgba(100, 149, 237, 0.6)',
-                        borderColor: '#6495ED',
-                        pointRadius: 4
-                    },
-                    {
-                        label: type === 'logistic' ? 'AI予測確率 (シグモイド曲線)' : 'AI予測線 (回帰直線)',
-                        data: lineData,
-                        type: 'line',
-                        borderColor: '#E91E63',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: { title: { display: true, text: topFactorName } },
-                    y: { title: { display: true, text: '目的変数 (ゴール)' } }
-                }
+        if (type === "logistic") {
+            // X軸: AI総合スコア(z), Y軸: 実際のデータ(0か1)
+            let zVals = [];
+            for(let i=0; i<X.length; i++) {
+                let z = res.bias;
+                for(let j=0; j<X[0].length; j++) z += res.weights[j] * X[i][j];
+                zVals.push(z);
+                scatterData.push({ x: z, y: y[i] });
             }
-        });
+            let zMin = Math.min(...zVals); let zMax = Math.max(...zVals);
+            for(let i=0; i<=50; i++) {
+                let zVal = zMin + (zMax - zMin) * (i / 50);
+                lineData.push({ x: zVal, y: 1 / (1 + Math.exp(-zVal)) });
+            }
+            regChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: '実際のお客様データ', data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
+                        { label: 'AI予測確率 (シグモイド曲線)', data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'AIの総合スコア (全変数の合算)' } },
+                        y: { title: { display: true, text: '確率 (ゴール)' } }
+                    }
+                }
+            });
+        } else {
+            // X軸: AIの予測数値, Y軸: 実際の数値
+            let yPredVals = [];
+            for(let i=0; i<X.length; i++) {
+                let y_pred = res.bias;
+                for(let j=0; j<X[0].length; j++) y_pred += res.weights[j] * X[i][j];
+                yPredVals.push(y_pred);
+                scatterData.push({ x: y_pred, y: y[i] });
+            }
+            
+            let minVal = Math.min(...yPredVals, ...y);
+            let maxVal = Math.max(...yPredVals, ...y);
+            // 完璧な予測線 (y = x)
+            lineData = [ { x: minVal, y: minVal }, { x: maxVal, y: maxVal } ];
+
+            regChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: '実際のお客様データ', data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
+                        { label: '理想の予測線 (予測と実際が一致)', data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'AIの予測数値' } },
+                        y: { title: { display: true, text: '実際の数値 (ゴール)' } }
+                    }
+                }
+            });
+        }
     }
 
     document.getElementById('printBtn').addEventListener('click', () => { 

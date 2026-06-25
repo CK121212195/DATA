@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>AIリピート診断アプリ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.css"/>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["pandas", "numpy", "scikit-learn"],
+        mainScriptData: `
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+import time
+
+# 画面の基本設定（スマホでも綺麗に見えるように）
+st.set_page_config(page_title="AIリピート診断", page_icon="🍽️", layout="centered")
+
+# バカでもわかるタイトルと説明
+st.title("🍽️ 常連客は誰だ？ AIリピート診断")
+st.write("お店のデータを入れるだけで、「どんなお客さんがリピートしやすいか」をAIがズバッと判定します。難しい統計の知識は一切不要です！")
+
+st.markdown("### 1. データの準備")
+data_source = st.radio("分析するデータを選んでください：", ["✨ サンプルデータで今すぐ試す（おすすめ）", "📁 自分のデータ(CSV)をアップロードする"])
+
+df = None
+if "サンプル" in data_source:
+    st.info("💡 架空のカフェのデータ（100件）をセットしました。このまま進んでください！")
+    # ダミーデータの生成
+    np.random.seed(42)
+    df = pd.DataFrame({
+        "客単価(円)": np.random.randint(800, 3000, 100),
+        "滞在時間(分)": np.random.randint(20, 120, 100),
+        "デザート注文(あり=1)": np.random.choice([0, 1], 100),
+        "クーポン利用(あり=1)": np.random.choice([0, 1], 100),
+    })
+    # デザート注文がリピートに強く影響するように設定した裏ロジック
+    prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(あり=1)"] + 0.5*df["クーポン利用(あり=1)"])))
+    df["次回来店したか(はい=1)"] = (np.random.rand(100) < prob).astype(int)
+    st.dataframe(df.head(3), use_container_width=True)
+else:
+    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        st.success("データの読み込みに成功しました！")
+        st.dataframe(df.head(3), use_container_width=True)
+
+if df is not None:
+    st.markdown("### 2. AI診断（無料プレビュー）")
+    # ここが「1タップ」の仕掛け
+    if st.button("🔮 ワンタップで分析スタート！", type="primary"):
+        with st.spinner("AIがデータを読み解いています... (初回のみ10秒ほどかかります)"):
+            time.sleep(2) # 分析している感を出す演出
+            
+            # ロジスティック回帰分析の実行（ブラウザ上で完結！）
+            X = df.drop("次回来店したか(はい=1)", axis=1)
+            y = df["次回来店したか(はい=1)"]
+            model = LogisticRegression()
+            model.fit(X, y)
+            
+            coef = model.coef_[0]
+            importance = pd.DataFrame({"要素": X.columns, "影響度": coef})
+            importance = importance.sort_values(by="影響度", ascending=False)
+            
+            # 結果をブラウザのメモリ(session_state)に保存
+            st.session_state["analyzed"] = True
+            st.session_state["top_factor"] = importance.iloc[0]["要素"]
+            st.session_state["importance"] = importance
+
+# 分析結果の表示エリア
+if st.session_state.get("analyzed"):
+    top = st.session_state["top_factor"]
+    st.success(f"🎉 分析完了！一番リピートに繋がっているのはズバリ **『{top}』** です！")
+    
+    st.write("▼ 各要素がリピートに与える影響の強さ")
+    st.bar_chart(st.session_state["importance"].set_index("要素"))
+    
+    st.markdown("---")
+    st.markdown("### 🔒 3. プロ仕様の詳細レポートを発行 (500円)")
+    st.write("銀行の融資資料や、スタッフとの作戦会議にそのまま使える「具体的な改善アクション」付きの詳細レポートを発行します。")
+    
+    # Square決済への導線（ダミーリンク）
+    st.link_button("💳 Squareで決済してパスコードを入手（500円）", "https://square.link/YOUR_DUMMY_LINK")
+    st.caption("※ 決済完了画面に表示される「パスコード」を下に入力してください。")
+    
+    # マネタイズの要：パスコード入力
+    passcode = st.text_input("🔑 パスコードを入力", type="password")
+    
+    if passcode == "2026BASE":
+        st.success("✅ 決済が確認できました！ありがとうございます。")
+        
+        # 本来はPDF生成ライブラリを使いますが、試作品としてテキストファイルを生成
+        report_text = f"【AIリピート診断 詳細レポート】\n\n■ 結論:\nあなたの店舗で最もリピートに貢献している要素は「{top}」です。\n\n■ 明日からのアクション:\nこの要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、顧客への声掛けを徹底してください。\n\n※このデータはブラウザ上で安全に計算されました。"
+        
+        st.download_button(
+            label="📄 詳細レポートをダウンロード",
+            data=report_text,
+            file_name="AI_Report.txt",
+            mime="text/plain",
+            type="primary"
+        )
+    elif passcode != "":
+        st.error("パスコードが間違っています。")
+`
+      }, document.getElementById("root"));
+    </script>
+  </body>
+</html>

@@ -3,140 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌷 お店のファン＆売上UP発見AIルーム</title>
+    <title>🌷 常連さん発見AI 診断ルーム</title>
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CV6S6GW8PC"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-CV6S6GW8PC');
-    </script>
-
+    <!-- 必要なライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
 
     <style>
+        /* --- 基本のスタイル --- */
         body {
-            background-color: #FFF5F7; color: #4A4A4A;
+            background-color: #FFF0F5; color: #4A4A4A;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            margin: 0; padding: 20px; line-height: 1.6;
+            margin: 0; padding: 20px;
         }
         .container {
             max-width: 800px; margin: 0 auto; background: #FFFFFF;
-            padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(255, 122, 154, 0.15);
+            padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(255, 122, 154, 0.1);
         }
-        h1 { color: #FF7A9A; text-align: center; font-size: 26px; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
-        h2 { font-size: 19px; border-bottom: 2px solid #FFE4E1; padding-bottom: 8px; margin-top: 35px; color: #333;}
+        h1 { color: #FF7A9A; text-align: center; font-size: 24px; }
+        h2 { font-size: 18px; border-bottom: 2px solid #FFE4E1; padding-bottom: 5px; margin-top: 30px;}
+        p { line-height: 1.6; }
         
-        .explanation-box { background-color: #FFF9FA; border-left: 5px solid #FFB6C1; padding: 18px; margin-bottom: 20px; border-radius: 8px; font-size: 14.5px; }
-        .explanation-box strong.title { display: block; color: #E91E63; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #FFC0CB; padding-bottom: 5px;}
-        
-        .explanation-blue { background-color: #F0F7FF; border-left: 5px solid #4A90E2; }
-        .explanation-blue strong.title { color: #4A90E2; border-bottom: 1px dashed #A9C9EE; }
+        .explanation-box {
+            background-color: #FFF9FA; border-left: 4px solid #FFC0CB;
+            padding: 15px; margin-bottom: 20px; border-radius: 8px; font-size: 14px;
+        }
+        .marker {
+            background: linear-gradient(transparent 60%, #FFC0CB 60%);
+            font-weight: bold; font-size: 18px; color: #E91E63;
+        }
 
-        .ai-advice-box { background-color: #F8F0FA; border-left: 5px solid #AB47BC; padding: 18px; margin-top: 20px; border-radius: 8px; }
-        .ai-advice-box strong.title { display: block; color: #8E24AA; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #CE93D8; padding-bottom: 5px;}
-
-        .marker { background: linear-gradient(transparent 60%, #FFE4E1 60%); font-weight: bold; font-size: 18px; color: #E91E63; padding: 0 4px;}
-
-        .btn { background-color: #FF7A9A; color: white; border: none; padding: 16px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; box-shadow: 0 4px 6px rgba(255, 122, 154, 0.2); transition: 0.3s;}
-        .btn:hover { background-color: #FF5C83; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255, 122, 154, 0.3); }
-        .btn-outline { background-color: transparent; color: #4A90E2; border: 2px solid #4A90E2; box-shadow: none; }
-        .btn-outline:hover { background-color: #F0F7FF; transform: translateY(-2px); }
-        .btn-twitter { background-color: #1DA1F2; color: white; border: none; }
-        .btn-twitter:hover { background-color: #1A91DA; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(29, 161, 242, 0.3); }
+        .btn {
+            background-color: #FF7A9A; color: white; border: none; padding: 15px 20px; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s;
+            margin-top: 15px; box-sizing: border-box; text-align: center;
+        }
+        .btn:hover { background-color: #FF5C83; }
+        .btn-outline {
+            background-color: transparent; color: #4A90E2; border: 2px solid #4A90E2;
+        }
+        .btn-outline:hover { background-color: #f0f7ff; }
         
-        .radio-group { margin-bottom: 20px; background: #fafafa; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
-        .radio-group label { display: block; margin: 12px 0; cursor: pointer; font-weight: bold; color: #555;}
-        input[type="file"] { margin: 10px 0; padding: 12px; border: 2px dashed #FFB6C1; border-radius: 10px; width: 100%; box-sizing: border-box; background: #fff;}
+        .radio-group { margin-bottom: 20px; }
+        .radio-group label { display: block; margin: 12px 0; cursor: pointer; font-weight: bold;}
+        input[type="file"] { margin: 10px 0; padding: 10px; border: 1px dashed #FF7A9A; border-radius: 8px; width: 100%; box-sizing: border-box;}
         
-        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; }
-        .preview-table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
-        .preview-table th, .preview-table td { border: 1px solid #FFE4E1; padding: 10px 12px; text-align: center; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; margin-bottom: 10px; }
+        .preview-table th, .preview-table td { border: 1px solid #FFE4E1; padding: 8px 12px; text-align: center; }
         .preview-table th { background-color: #FFF0F5; color: #FF7A9A; }
+        .preview-table td { background-color: #fff; }
         
-        .example-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px; background: #fff;}
-        .example-table th, .example-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-        .example-table th.goal { background-color: #FFE4E1; color: #E91E63; font-weight: bold; border: 2px solid #FFB6C1; }
-        .example-table td.goal { border: 2px solid #FFB6C1; font-weight: bold;}
-
-        details { background: #F9F9F9; padding: 12px; border-radius: 10px; margin-top: 20px; cursor: pointer; border: 1px solid #eee; }
-        summary { font-weight: bold; color: #555; outline: none; padding: 5px 0;}
+        details { background: #F9F9F9; padding: 15px; border-radius: 8px; margin-top: 20px; cursor: pointer; border: 1px solid #eee; }
+        summary { font-weight: bold; color: #333; outline: none; padding: 5px 0;}
         
-        #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; font-size: 18px; }
+        #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
         #resultArea { display: none; }
-        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 10px; margin: 20px 0; line-height: 1.8; border-left: 5px solid #4CAF50;}
+        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
+        .mode-badge { display: inline-block; background-color: #FF7A9A; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
         
-        .stat-section { background-color: #f4f6f8; border: 1px solid #dcdfe6; border-radius: 6px; padding: 15px; font-family: monospace; font-size: 13px; margin-top: 15px; overflow-x: auto; }
+        .stat-section {
+            background-color: #f4f6f8; border: 1px solid #dcdfe6; border-radius: 6px;
+            padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 13px;
+            color: #333; margin-top: 15px; overflow-x: auto; cursor: text;
+        }
         .stat-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         .stat-table th, .stat-table td { border: 1px solid #ccc; padding: 6px 8px; text-align: right; }
-        .stat-table th { background-color: #e2e8f0; text-align: center; font-weight: bold;}
+        .stat-table th { background-color: #e2e8f0; text-align: center; color: #333; font-weight: bold;}
         .stat-table td:first-child { text-align: left; font-weight: bold; }
         .equation { background: #fff; padding: 10px; border-left: 4px solid #4A90E2; margin-bottom: 15px; line-height: 1.8;}
 
-        .mode-badge { display: inline-block; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-        .mode-logistic { background-color: #FFF0F5; color: #E91E63; border: 1px solid #FFC0CB; }
-        .mode-linear { background-color: #F0F7FF; color: #4A90E2; border: 1px solid #A9C9EE; }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-group button { flex: 1; min-width: 200px; margin-top: 0; }
-
+        /* --- 🖨️ 印刷＆PDF保存用の最強CSS --- */
         @media print {
             body { background-color: #FFFFFF; color: #000; padding: 0; }
             .container { box-shadow: none; padding: 0; max-width: 100%; }
-            h1, .subtitle, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, .explanation-box, hr, #step3, .btn-group, #btcFooter { display: none !important; }
+            h1, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, 
+            .explanation-box, hr, #step3, #printBtn, #shareBtn {
+                display: none !important;
+            }
             #resultArea { display: block !important; }
-            details { background: none; margin: 0; padding: 0; border: none; }
+            details { background: none; border: none; margin: 0; padding: 0; }
             summary { display: none; }
             details > * { display: block !important; }
+            canvas { max-width: 100%; height: auto !important; }
             .stat-section { border: 1px solid #999; background: #fff; }
-            #resultArea::before { content: "【社外秘】AI データ分析レポート (発行日: " attr(data-date) ")"; display: block; font-size: 20px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+            
+            #resultArea::before {
+                content: "【社外秘】AI データ分析レポート (発行日: " attr(data-date) ")";
+                display: block; font-size: 20px; font-weight: bold; color: #333;
+                border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌷 お店のファン＆売上UP発見AIルーム</h1>
-    <p class="subtitle">過去のデータから、あなたのお店だけの「売れるヒント」を見つけます。<br>難しい計算はぜんぶAIに丸投げしてくださいね☕️</p>
+    <h1>🌷 常連さん発見AI 診断ルーム</h1>
+    <p>お店のデータを入れるだけで、AIが自動で「どんなお客さんがファンになってくれるか」「売上アップの鍵は何か」を分析します✨<br>
+    ※お客様のデータはサーバーに送信されず、この画面上で安全に処理されます。</p>
 
-    <h2 id="step1">🌸 1. データの準備（AIへのお願い）</h2>
+    <h2 id="step1">🌸 1. データの準備</h2>
+    
     <div class="explanation-box">
-        <strong class="title">💡 表の作り方ルール（とっても簡単です！）</strong>
-        <p>エクセルやスプレッドシートで、お客様のデータをまとめてください。<br>
-        <strong>一番大事なのは、「AIに予測してほしいゴール（目標の数字）」を、表の最後に置くこと</strong>です。</p>
+        <p style="margin-top:0;"><strong>💡 AIに渡すデータの作り方（エクセルのルール）</strong></p>
+        <p>一番右の列に、AIに予測してほしい「ゴール」を置いてください。</p>
         
-        <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 280px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #FFE4E1;">
-                <strong style="color:#E91E63;">【パターンA】確率を知りたいとき</strong><br>
-                <span style="font-size:13px; color:#666;">（例：次も来る？ 商品を買う？ など）</span><br>
-                <span style="font-size:12px;">ゴールは必ず「1(はい)」「0(いいえ)」にします。</span>
-                <table class="example-table">
-                    <tr><th>客単価</th><th>デザート</th><th class="goal">次も来たか？(ゴール)</th></tr>
-                    <tr><td>1500</td><td>1 (はい)</td><td class="goal">1 (はい)</td></tr>
-                    <tr><td>800</td><td>0 (いいえ)</td><td class="goal">0 (いいえ)</td></tr>
-                </table>
-            </div>
-            <div style="flex: 1; min-width: 280px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #A9C9EE;">
-                <strong style="color:#4A90E2;">【パターンB】金額や回数を知りたいとき</strong><br>
-                <span style="font-size:13px; color:#666;">（例：売上はいくらになる？ 何回通う？ など）</span><br>
-                <span style="font-size:12px;">ゴールには実際の金額や回数を入れます。</span>
-                <table class="example-table">
-                    <tr><th>滞在時間</th><th>トリートメント</th><th class="goal">最終売上(ゴール)</th></tr>
-                    <tr><td>90</td><td>1 (はい)</td><td class="goal">12500</td></tr>
-                    <tr><td>45</td><td>0 (いいえ)</td><td class="goal">4000</td></tr>
-                </table>
-            </div>
+        <strong style="color:#4A90E2;">【パターンA】確率を知りたい場合（次回来るか？など）</strong><br>
+        一番右を「1＝はい」「0＝いいえ」で入力します。
+        <div class="table-wrapper">
+            <table class="preview-table">
+                <tr><th>客単価</th><th>デザート注文(1=あり)</th><th style="background-color:#ffe6e6;">次回来店したか(1=はい)</th></tr>
+                <tr><td>8,500円</td><td>1</td><td style="background-color:#fff0f0; font-weight:bold;">1</td></tr>
+                <tr><td>4,200円</td><td>0</td><td style="background-color:#fff0f0; font-weight:bold;">0</td></tr>
+            </table>
+        </div>
+
+        <strong style="color:#2E7D32; margin-top:10px; display:inline-block;">【パターンB】金額や回数を知りたい場合（売上など）</strong><br>
+        一番右に「実際の数値」をそのまま入力します。
+        <div class="table-wrapper">
+            <table class="preview-table">
+                <tr><th>滞在時間(分)</th><th>指名あり(1=はい)</th><th style="background-color:#e6f4ea;">当日の売上</th></tr>
+                <tr><td>90</td><td>1</td><td style="background-color:#f0f8f1; font-weight:bold;">12,500円</td></tr>
+                <tr><td>45</td><td>0</td><td style="background-color:#f0f8f1; font-weight:bold;">5,800円</td></tr>
+            </table>
         </div>
     </div>
 
     <div class="radio-group">
-        <label><input type="radio" name="dataSource" value="sample_logistic" checked> ✨ 架空のカフェのデータで試す（パターンA: 確率予測）</label>
-        <label><input type="radio" name="dataSource" value="sample_linear"> ✨ 架空の美容室のデータで試す（パターンB: 金額予測）</label>
+        <label><input type="radio" name="dataSource" value="sample" checked> ✨ サンプルデータでまずは試す（おすすめ！）</label>
         <label><input type="radio" name="dataSource" value="csv"> 📁 自分のデータ(CSV)をアップロードする</label>
     </div>
 
@@ -145,107 +141,73 @@
     </div>
 
     <div id="dataPreviewArea">
-        <div id="aiModeAlert" style="margin-bottom: 10px;"></div>
         <div class="table-wrapper">
             <table class="preview-table" id="previewTable"></table>
         </div>
     </div>
 
-    <h2>🪄 2. AI無料診断スタート</h2>
-    <button class="btn" id="analyzeBtn">🔮 ワンタップでAI分析をスタート！</button>
-    <div id="loading">✨ AIがお店のデータを読み解き、ヒントを探しています...☕️</div>
+    <h2>🪄 2. AI無料診断プレビュー</h2>
+    <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
+    <div id="loading">✨ AIがデータを学習しています...（数秒かかります）</div>
 
     <div id="resultArea">
+        <div id="modeBadge" class="mode-badge"></div>
         <div id="conclusion" class="success-msg"></div>
         
-        <div id="aiAdviceArea" class="ai-advice-box"></div>
-
-        <p style="font-weight:bold; margin-top:25px; font-size:18px; color:#333;">▼ あなたのお店の「影響力」グラフ</p>
+        <p style="font-weight:bold; margin-top:20px;">▼ 要素ごとの影響力グラフ</p>
+        <div class="explanation-box" id="oddsExplanation" style="background-color: #f0f7ff; border-left-color: #4A90E2; display: none;">
+            <strong>💡 見方のコツ（オッズ比って？）</strong><br>
+            「1.0倍」を基準にして、それより数字が大きければ大きいほど「強力な武器」になります。<br>
+            例：デザート注文が 3.5倍 なら、「デザートを頼んだ人は、頼まなかった人の 3.5倍 も常連になりやすい！」という意味です。
+        </div>
         <canvas id="myChart"></canvas>
 
-        <div id="chartExplanation" class="explanation-box explanation-blue" style="margin-top: 15px;"></div>
-
         <details id="statDetailsWrapper">
-            <summary>📊 専門家向け：計算根拠（回帰分析グラフ・統計データ）</summary>
+            <summary>📊 専門家向け：詳細な統計情報と回帰曲線（クリックで開く）</summary>
             
-            <p style="font-weight:bold; margin-top:15px; font-size:15px; color:#333; text-align:center;">▼ 回帰曲線グラフ（トップ変数と目的変数の関係）</p>
-            <div style="max-width: 600px; margin: 0 auto;">
-                <canvas id="regressionChart"></canvas>
-            </div>
-            
+            <h3 style="font-size:16px; border-bottom:1px solid #ccc; padding-bottom:5px; margin-top:20px;">📈 最強要素の回帰曲線（シミュレーション）</h3>
+            <p style="font-size:13px; color:#666;">※他の変数を平均値で固定し、トップの要素単体がゴールに与える影響をAIが描画したグラフです。</p>
+            <canvas id="curveChart"></canvas>
+
             <div class="stat-section" id="statDetails"></div>
         </details>
 
-        <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 35px 0;">
+        <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 30px 0;">
 
-        <h2 id="step3">🎁 3. 分析結果を保存・シェアする（完全無料）</h2>
-        <p>融資の提出や、スタッフ会議にそのまま使える機能です。お店の宣伝にもお使いください！</p>
-        
-        <div class="btn-group">
-            <button class="btn" id="printBtn" style="background-color: #4A90E2;">🖨️ PDFとして保存 / 印刷</button>
-            <button class="btn btn-outline" id="copyTextBtn">📋 テキスト結果をコピー</button>
-            <button class="btn btn-twitter" id="twitterShareBtn">🐦 X (Twitter) でシェアする</button>
-        </div>
+        <h2 id="step3">🎁 3. 分析結果を保存・シェアする</h2>
+        <button class="btn" id="printBtn" style="background-color: #4A90E2; margin-bottom: 10px;">🖨️ このレポートを綺麗に印刷／PDFとして保存</button>
+        <button class="btn" id="shareBtn" style="background-color: #1DA1F2;">🐦 X (Twitter) で診断結果をシェアする</button>
+
     </div>
 </div>
 
-<!-- 隠しBitcoin寄付リンク -->
-<div id="btcFooter" style="text-align:center; margin-top: 40px; margin-bottom: 20px; font-size: 11px; color: #ccc;">
-    開発者を応援する☕️ Lightning Network: <span id="btcAddress" style="cursor:pointer; text-decoration:underline;">brashridge65@walletofsatoshi.com</span>
+<!-- 隠し寄付リンク（アラートなし） -->
+<div style="text-align:center; font-size:10px; color:#eee; margin-top:50px; cursor:pointer;" id="donateBtn">
+    ☕ 開発者にコーヒーをおごる (BTC: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa)
 </div>
 
 <script>
-    let currentColumns = []; let currentData = []; let chartInstance = null; let regChartInstance = null;
-    let analysisResultData = null; let currentAnalysisType = "logistic"; 
-    
-    document.getElementById('resultArea').setAttribute('data-date', new Date().toLocaleDateString());
+    let currentColumns = [];
+    let currentData = [];
+    let chartInstance = null;
+    let curveChartInstance = null;
+    let isLogisticMode = true;
 
-    function formatNumber(num) {
-        return Number(num).toLocaleString(undefined, {maximumFractionDigits: 1});
-    }
+    const today = new Date();
+    document.getElementById('resultArea').setAttribute('data-date', `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`);
 
-    function generateSampleLogistic() {
-        currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(ゴール)"];
+    function generateSampleData() {
+        currentColumns = ["客単価", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか"];
         currentData = [];
         for (let i = 0; i < 150; i++) {
-            let tanka = Math.floor(Math.random() * 2200) + 800; let time = Math.floor(Math.random() * 100) + 20;
-            let dessert = Math.random() < 0.5 ? 1 : 0; let coupon = Math.random() < 0.5 ? 1 : 0;
+            let tanka = Math.floor(Math.random() * 2200) + 800;
+            let time = Math.floor(Math.random() * 100) + 20;
+            let dessert = Math.random() < 0.5 ? 1 : 0;
+            let coupon = Math.random() < 0.5 ? 1 : 0;
             let z = -2.5 + 0.001 * tanka + 2.2 * dessert + 0.6 * coupon;
-            currentData.push([tanka, time, dessert, coupon, Math.random() < (1 / (1 + Math.exp(-z))) ? 1 : 0]);
-        }
-        processDataPreview();
-    }
-
-    function generateSampleLinear() {
-        currentColumns = ["滞在時間(分)", "指名予約(1=あり)", "トリートメント(1=あり)", "スタッフ歴(年)", "最終売上金額(ゴール)"];
-        currentData = [];
-        for (let i = 0; i < 150; i++) {
-            let time = Math.floor(Math.random() * 90) + 30; let shimei = Math.random() < 0.4 ? 1 : 0;
-            let trt = Math.random() < 0.6 ? 1 : 0; let exp = Math.floor(Math.random() * 10) + 1;
-            let sales = 3000 + (time * 10) + (shimei * 2000) + (trt * 3500) + (exp * 500) + (Math.random() * 1000 - 500);
-            currentData.push([time, shimei, trt, exp, Math.floor(sales)]);
-        }
-        processDataPreview();
-    }
-
-    function processDataPreview() {
-        if (currentData.length === 0) return;
-        const y = currentData.map(row => row[row.length - 1]);
-        const uniqueY = [...new Set(y)];
-        const targetName = currentColumns[currentColumns.length - 1];
-        
-        if (uniqueY.length <= 2) {
-            currentAnalysisType = "logistic";
-            document.getElementById('aiModeAlert').innerHTML = `
-                <div class="mode-badge mode-logistic">✨ AIの確認完了：【確率予測モード】で分析します</div>
-                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">AIは、最後の列「${targetName}」が起きる確率（YES/NO）を分析する準備ができました！</p>
-            `;
-        } else {
-            currentAnalysisType = "linear";
-            document.getElementById('aiModeAlert').innerHTML = `
-                <div class="mode-badge mode-linear">✨ AIの確認完了：【数値・金額予測モード】で分析します</div>
-                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">AIは、最後の列「${targetName}」の金額や回数を増やすヒントを分析する準備ができました！</p>
-            `;
+            let prob = 1 / (1 + Math.exp(-z));
+            let repeat = Math.random() < prob ? 1 : 0;
+            currentData.push([tanka, time, dessert, coupon, repeat]);
         }
         renderPreviewTable();
     }
@@ -254,7 +216,7 @@
         const table = document.getElementById('previewTable');
         let html = `<tr>${currentColumns.map(col => `<th>${col}</th>`).join('')}</tr>`;
         for (let i = 0; i < Math.min(3, currentData.length); i++) {
-            html += `<tr>${currentData[i].map(val => `<td>${formatNumber(val)}</td>`).join('')}</tr>`;
+            html += `<tr>${currentData[i].map(val => `<td>${val.toLocaleString()}</td>`).join('')}</tr>`;
         }
         table.innerHTML = html;
     }
@@ -262,149 +224,223 @@
     document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             document.getElementById('resultArea').style.display = 'none';
-            document.getElementById('aiModeAlert').innerHTML = '';
-            if (e.target.value === 'sample_logistic') { document.getElementById('uploadArea').style.display = 'none'; generateSampleLogistic(); }
-            else if (e.target.value === 'sample_linear') { document.getElementById('uploadArea').style.display = 'none'; generateSampleLinear(); }
-            else { document.getElementById('uploadArea').style.display = 'block'; currentColumns = []; currentData = []; document.getElementById('previewTable').innerHTML = ''; }
+            if (e.target.value === 'sample') {
+                document.getElementById('uploadArea').style.display = 'none';
+                generateSampleData();
+            } else {
+                document.getElementById('uploadArea').style.display = 'block';
+                document.getElementById('previewTable').innerHTML = '';
+                currentColumns = []; currentData = [];
+            }
         });
     });
 
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
+        const file = e.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = function(event) {
-            const arr = new Uint8Array(event.target.result);
-            const detected = Encoding.detect(arr);
-            const str = Encoding.convert(arr, { to: 'UNICODE', from: detected || 'AUTO', type: 'string' });
-            Papa.parse(str, {
+            const uint8Array = new Uint8Array(event.target.result);
+            const detected = Encoding.detect(uint8Array);
+            const unicodeString = Encoding.convert(uint8Array, {
+                to: 'UNICODE', from: detected || 'AUTO', type: 'string'
+            });
+
+            Papa.parse(unicodeString, {
                 header: true, dynamicTyping: true, skipEmptyLines: true,
-                complete: function(res) {
-                    if(res.data.length === 0) return alert("データが空です");
-                    currentColumns = Object.keys(res.data[0]);
-                    currentData = res.data.map(row => currentColumns.map(col => Number(row[col]) || 0));
-                    processDataPreview();
+                complete: function(results) {
+                    if(results.data.length === 0) return alert("❌ データが空です！");
+                    currentColumns = Object.keys(results.data[0]);
+                    currentData = results.data.map(row => {
+                        return currentColumns.map(col => {
+                            let val = Number(row[col]);
+                            return isNaN(val) ? 0 : val;
+                        });
+                    });
+                    renderPreviewTable();
                 }
             });
         };
         reader.readAsArrayBuffer(file);
     });
-    
-    generateSampleLogistic();
 
-    function generateAiAdvice(features, targetName, topFactor) {
-        let text = features.join(" ");
-        let industry = "店舗ビジネス全般";
-        let advice = `素晴らしいデータです！お店の成長の鍵は「${topFactor}」にあるとAIが判定しました。<br>次回は『来店した曜日（週末=1）』や『クーポンの種類』をデータに足してみましょう。お客様の解像度がグッと上がり、新たな発見に繋がります！`;
-        
-        if (text.includes("デザート") || text.includes("飲") || text.includes("注文") || text.includes("メニュー")) {
-            industry = "🍽️ 飲食店・カフェ";
-            advice = `【AIからの提案】今回最も影響力が高かった「${topFactor}」を、初回LINE登録の「無料プレゼント」に設定するのが王道の戦略です！<br>次回は『雨の日の来店か？(1=はい)』や『同伴者の有無(1=あり)』をデータに足すと、より精度の高いプロモーションが打てます。`;
-        } else if (text.includes("指名") || text.includes("カラー") || text.includes("カット") || text.includes("トリートメント") || text.includes("スタッフ")) {
-            industry = "✂️ 美容室・サロン";
-            advice = `【AIからの提案】影響力が高かった「${topFactor}」を「初回お試し価格」で提供し、体験してもらう機会を増やしましょう。<br>次回は『店販商品（シャンプー等）の購入有無(1=あり)』をデータに足すと、LTV（生涯顧客価値）の分析が深まります！`;
-        } else if (text.includes("体験") || text.includes("入会") || text.includes("レッスン")) {
-            industry = "🏋️ スクール・フィットネス";
-            advice = `【AIからの提案】「${topFactor}」が成約や継続の最大のフックになっています。これを前面に押し出した広告を作りましょう！`;
-        }
-        return { industry, advice };
-    }
+    generateSampleData();
 
+    // ▼▼ 統計共通関数 ▼▼
     function normalCDF(x) {
-        let t = 1 / (1 + 0.2316419 * Math.abs(x)); let d = 0.3989423 * Math.exp(-x * x / 2);
+        let t = 1 / (1 + 0.2316419 * Math.abs(x));
+        let d = 0.3989423 * Math.exp(-x * x / 2);
         let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
         return x > 0 ? 1 - p : p;
     }
     function invertMatrix(M) {
-        let n = M.length; let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
+        let n = M.length;
+        let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
         let A = M.map(row => [...row]);
         for (let i = 0; i < n; i++) {
             let maxEl = Math.abs(A[i][i]); let maxRow = i;
-            for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
+            for (let k = i + 1; k < n; k++) {
+                if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
+            }
             if (maxEl === 0) return null;
-            for (let k = 0; k < n; k++) { [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]]; [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]]; }
+            for (let k = 0; k < n; k++) {
+                [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]];
+                [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]];
+            }
             let pivot = A[i][i];
             for (let k = 0; k < n; k++) { A[i][k] /= pivot; I[i][k] /= pivot; }
-            for (let j = 0; j < n; j++) if (i !== j) { let f = A[j][i]; for (let k = 0; k < n; k++) { A[j][k] -= f * A[i][k]; I[j][k] -= f * I[i][k]; } }
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    let factor = A[j][i];
+                    for (let k = 0; k < n; k++) { A[j][k] -= factor * A[i][k]; I[j][k] -= factor * I[i][k]; }
+                }
+            }
         }
         return I;
     }
 
-    function runLogistic(X, y) {
+    // ▼▼ ロジスティック回帰 (確率) ▼▼
+    function runLogisticRegression(X, y) {
         const m = X.length; const n = X[0].length;
         const means = Array(n).fill(0); const stds = Array(n).fill(0);
-        for(let j=0; j<n; j++) { let sum = 0; for(let i=0; i<m; i++) sum+=X[i][j]; means[j] = sum/m; let sqSum=0; for(let i=0; i<m; i++) sqSum+=Math.pow(X[i][j]-means[j],2); stds[j] = Math.sqrt(sqSum/m)||1; }
-        const X_sc = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
-        let w = Array(n).fill(0); let b = 0; const epochs = 2000; const lr = 0.5;
-        for(let ep=0; ep<epochs; ep++) {
+        for(let j=0; j<n; j++) {
+            let sum = 0; for(let i=0; i<m; i++) sum += X[i][j];
+            means[j] = sum / m;
+            let sqSum = 0; for(let i=0; i<m; i++) sqSum += Math.pow(X[i][j] - means[j], 2);
+            stds[j] = Math.sqrt(sqSum / m) || 1;
+        }
+        const X_scaled = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
+        let weights = Array(n).fill(0); let bias = 0;
+        const epochs = 2000; const lr = 0.5;
+        for(let epoch=0; epoch<epochs; epoch++) {
             let dw = Array(n).fill(0); let db = 0;
             for(let i=0; i<m; i++) {
-                let z = b; for(let j=0; j<n; j++) z += w[j]*X_sc[i][j];
-                let err = (1/(1+Math.exp(-z))) - y[i];
-                for(let j=0; j<n; j++) dw[j]+=err*X_sc[i][j]; db+=err;
+                let z = bias;
+                for(let j=0; j<n; j++) z += weights[j] * X_scaled[i][j];
+                let err = (1 / (1 + Math.exp(-z))) - y[i];
+                for(let j=0; j<n; j++) dw[j] += err * X_scaled[i][j];
+                db += err;
             }
-            for(let j=0; j<n; j++) w[j]-=(lr*dw[j])/m; b-=(lr*db)/m;
+            for(let j=0; j<n; j++) weights[j] -= (lr * dw[j]) / m;
+            bias -= (lr * db) / m;
         }
-        let origW = Array(n).fill(0); let origB = b;
-        for(let j=0; j<n; j++) { origW[j] = w[j]/stds[j]; origB -= (w[j]*means[j])/stds[j]; }
-        
-        let H = Array(n+1).fill(0).map(()=>Array(n+1).fill(0));
-        let correct=0;
+        let origWeights = Array(n).fill(0); let origBias = bias;
+        for(let j=0; j<n; j++) {
+            origWeights[j] = weights[j] / stds[j];
+            origBias -= (weights[j] * means[j]) / stds[j];
+        }
+        let k_params = n + 1; let logLikelihood = 0; let p_hat = []; let X_design = [];
         for(let i=0; i<m; i++) {
-            let z = origB; for(let j=0; j<n; j++) z+=origW[j]*X[i][j];
-            let p = Math.max(1e-15, Math.min(1-1e-15, 1/(1+Math.exp(-z))));
-            let wt = p*(1-p); let Xd = [1, ...X[i]];
-            for(let r=0; r<=n; r++) for(let c=0; c<=n; c++) H[r][c] += Xd[r]*Xd[c]*wt;
-            if((p>=0.5?1:0)===y[i]) correct++;
+            X_design.push([1, ...X[i]]);
+            let z = origBias;
+            for(let j=0; j<n; j++) z += origWeights[j] * X[i][j];
+            let prob = Math.max(1e-15, Math.min(1 - 1e-15, 1 / (1 + Math.exp(-z))));
+            p_hat.push(prob);
+            logLikelihood += y[i] * Math.log(prob) + (1 - y[i]) * Math.log(1 - prob);
         }
-        let cov = invertMatrix(H); let se = Array(n+1).fill(0), pVal = Array(n+1).fill(0), ci95 = Array(n+1).fill(null);
-        let params = [origB, ...origW];
-        if(cov) {
-            for(let j=0; j<=n; j++) {
-                se[j] = Math.sqrt(Math.max(0, cov[j][j]));
-                pVal[j] = 2*(1-normalCDF(Math.abs(params[j]/(se[j]||1e-9))));
-                ci95[j] = { lower: params[j] - 1.96 * se[j], upper: params[j] + 1.96 * se[j] };
+        let y_mean = y.reduce((a, b) => a + b, 0) / m;
+        let nullLogLikelihood = 0;
+        for(let i=0; i<m; i++) nullLogLikelihood += y[i] * Math.log(y_mean) + (1 - y[i]) * Math.log(1 - y_mean);
+        let H = Array(k_params).fill(0).map(() => Array(k_params).fill(0));
+        for(let i=0; i<m; i++) {
+            let w = p_hat[i] * (1 - p_hat[i]);
+            for(let row=0; row<k_params; row++) {
+                for(let col=0; col<k_params; col++) { H[row][col] += X_design[i][row] * X_design[i][col] * w; }
             }
         }
-        return { type: "logistic", weights: origW, stdWeights: w, bias: origB, stdErrors: se, pValues: pVal, ci95: ci95, accuracy: correct/m, means: means };
+        let covMatrix = invertMatrix(H);
+        let stdErrors = Array(k_params).fill(null); let pValues = Array(k_params).fill(null);
+        let zValues = Array(k_params).fill(null); let ci95 = Array(k_params).fill(null);
+        let allParams = [origBias, ...origWeights];
+        if (covMatrix) {
+            for(let j=0; j<k_params; j++) {
+                let se = Math.sqrt(Math.max(0, covMatrix[j][j])); stdErrors[j] = se;
+                let z = allParams[j] / (se || 1e-9); zValues[j] = z;
+                pValues[j] = 2 * (1 - normalCDF(Math.abs(z)));
+                ci95[j] = { lower: allParams[j] - 1.96 * se, upper: allParams[j] + 1.96 * se };
+            }
+        }
+        let correct = 0;
+        for(let i=0; i<m; i++) if ((p_hat[i] >= 0.5 ? 1 : 0) === y[i]) correct++;
+        return { 
+            weights: origWeights, bias: origBias, accuracy: correct / m,
+            stdErrors, zValues, pValues, ci95, logLikelihood,
+            aic: 2 * k_params - 2 * logLikelihood, pseudoR2: 1 - (logLikelihood / nullLogLikelihood),
+        };
     }
 
-    function runLinear(X, y) {
-        const m = X.length; const n = X[0].length; const k = n + 1;
-        const xMeans = Array(n).fill(0); const xStds = Array(n).fill(0);
-        for(let j=0; j<n; j++) { let sum=0; for(let i=0; i<m; i++) sum+=X[i][j]; xMeans[j]=sum/m; let sqSum=0; for(let i=0; i<m; i++) sqSum+=Math.pow(X[i][j]-xMeans[j],2); xStds[j]=Math.sqrt(sqSum/m)||1; }
-        let yMean = y.reduce((a,b)=>a+b,0)/m; let ySqSum=0; for(let i=0; i<m; i++) ySqSum+=Math.pow(y[i]-yMean,2); let yStd=Math.sqrt(ySqSum/m)||1;
+    // ▼▼ 重回帰分析 (金額・回数) ▼▼
+    function runLinearRegression(X, y) {
+        const m = X.length; const n = X[0].length;
+        let k_params = n + 1;
+        let X_design = X.map(row => [1, ...row]);
 
-        let Xd = X.map(r => [1, ...r]);
-        let XtX = Array(k).fill(0).map(()=>Array(k).fill(0));
-        for(let i=0; i<m; i++) for(let r=0; r<k; r++) for(let c=0; c<k; c++) XtX[r][c]+=Xd[i][r]*Xd[i][c];
+        let XtX = Array(k_params).fill(0).map(() => Array(k_params).fill(0));
+        let Xty = Array(k_params).fill(0);
+        for(let i=0; i<m; i++){
+            for(let row=0; row<k_params; row++){
+                Xty[row] += X_design[i][row] * y[i];
+                for(let col=0; col<k_params; col++){
+                    XtX[row][col] += X_design[i][row] * X_design[i][col];
+                }
+            }
+        }
+
         let XtX_inv = invertMatrix(XtX);
-        let Xty = Array(k).fill(0);
-        for(let i=0; i<m; i++) for(let r=0; r<k; r++) Xty[r]+=Xd[i][r]*y[i];
-        
-        let beta = Array(k).fill(0);
-        for(let r=0; r<k; r++) for(let c=0; c<k; c++) beta[r]+=XtX_inv[r][c]*Xty[c];
-        
-        let RSS=0, TSS=0;
-        for(let i=0; i<m; i++) {
-            let p=0; for(let j=0; j<k; j++) p+=Xd[i][j]*beta[j];
-            RSS+=Math.pow(y[i]-p,2); TSS+=Math.pow(y[i]-yMean,2);
-        }
-        let r2 = 1 - (RSS/TSS); let sigma2 = RSS/(m-k);
-        let se = Array(k).fill(0), pVal = Array(k).fill(0), ci95 = Array(k).fill(null);
-        for(let j=0; j<k; j++) {
-            se[j] = Math.sqrt(Math.max(0, sigma2*XtX_inv[j][j]));
-            pVal[j] = 2*(1-normalCDF(Math.abs(beta[j]/(se[j]||1e-9))));
-            ci95[j] = { lower: beta[j] - 1.96 * se[j], upper: beta[j] + 1.96 * se[j] };
-        }
-        
-        let stdW = Array(n).fill(0);
-        for(let j=0; j<n; j++) stdW[j] = beta[j+1] * (xStds[j]/yStd);
+        if(!XtX_inv) return null;
 
-        return { type: "linear", weights: beta.slice(1), stdWeights: stdW, bias: beta[0], stdErrors: se, pValues: pVal, ci95: ci95, r2: r2, means: xMeans };
+        let params = Array(k_params).fill(0);
+        for(let i=0; i<k_params; i++){
+            for(let j=0; j<k_params; j++){
+                params[i] += XtX_inv[i][j] * Xty[j];
+            }
+        }
+
+        let bias = params[0];
+        let weights = params.slice(1);
+
+        let y_mean = y.reduce((a,b)=>a+b, 0)/m;
+        let tss = 0; let rss = 0;
+        for(let i=0; i<m; i++){
+            tss += Math.pow(y[i] - y_mean, 2);
+            let pred = bias;
+            for(let j=0; j<n; j++) pred += weights[j] * X[i][j];
+            rss += Math.pow(y[i] - pred, 2);
+        }
+        
+        let r2 = 1 - (rss / (tss || 1));
+        let variance = rss / (m - k_params);
+        let stdErrors = Array(k_params).fill(0);
+        let zValues = Array(k_params).fill(0);
+        let pValues = Array(k_params).fill(0);
+        let ci95 = Array(k_params).fill(null);
+
+        for(let j=0; j<k_params; j++){
+            let se = Math.sqrt(Math.max(0, variance * XtX_inv[j][j]));
+            stdErrors[j] = se;
+            zValues[j] = params[j] / (se || 1e-9);
+            pValues[j] = 2 * (1 - normalCDF(Math.abs(zValues[j])));
+            ci95[j] = { lower: params[j] - 1.96 * se, upper: params[j] + 1.96 * se };
+        }
+
+        return {
+            weights, bias, r2, stdErrors, zValues, pValues, ci95
+        };
+    }
+
+    function getSignificanceMark(p) {
+        if(p === null) return "";
+        if(p < 0.001) return "***";
+        if(p < 0.01) return "**";
+        if(p < 0.05) return "*";
+        if(p < 0.1) return ".";
+        return "";
     }
 
     document.getElementById('analyzeBtn').addEventListener('click', () => {
         if (currentData.length === 0) return alert("データがありません！");
+
         document.getElementById('analyzeBtn').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
@@ -414,91 +450,114 @@
             const y = currentData.map(row => row[row.length - 1]);
             const featureNames = currentColumns.slice(0, -1);
             const targetName = currentColumns[currentColumns.length - 1];
-            
-            // 金額かどうか判定
-            const isAmount = targetName.includes('円') || targetName.includes('金額') || targetName.includes('売上');
 
-            let res = currentAnalysisType === "logistic" ? runLogistic(X, y) : runLinear(X, y);
+            // AIが 確率モード(0/1) か 金額モード(連続値) かを自動判定
+            let uniqueY = new Set(y);
+            isLogisticMode = (uniqueY.size <= 2 && (uniqueY.has(0) || uniqueY.has(1)));
 
-            let importanceData = featureNames.map((name, i) => {
-                return { 
-                    name: name, coef: res.weights[i], stdCoef: res.stdWeights[i], 
-                    oddsRatio: currentAnalysisType === "logistic" ? Math.exp(res.weights[i]) : null,
-                    pValue: res.pValues[i+1]
-                };
-            });
-            
-            importanceData.sort((a, b) => Math.abs(b.stdCoef) - Math.abs(a.stdCoef));
-            let topPositive = importanceData.find(d => d.stdCoef > 0 && d.pValue < 0.05) || importanceData.find(d => d.stdCoef > 0) || importanceData[0];
-            let topFactorName = topPositive.name;
-
-            const aiBrain = generateAiAdvice(featureNames, targetName, topFactorName);
-            document.getElementById('aiAdviceArea').innerHTML = `
-                <strong class="title">🤖 AIからの提案 (${aiBrain.industry}向け)</strong>
-                <p>${aiBrain.advice}</p>
-            `;
-
-            analysisResultData = { type: currentAnalysisType, topFactor: topFactorName, items: importanceData, target: targetName, isAmount: isAmount, acc: res.accuracy ? (res.accuracy*100).toFixed(1) : null, r2: res.r2 ? res.r2.toFixed(3) : null };
-
-            let msg = `
-                <div style="font-size: 22px; font-weight: bold; margin-bottom: 15px; color:#E91E63;">🎉 診断が完了しました！</div>
-                お店の「${targetName}」を引き上げる最大の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！<br>
-                この要素を少し工夫するだけで、お店の数字がグッと良くなる可能性が高いです✨
-            `;
-            document.getElementById('conclusion').innerHTML = msg;
-
-            if (currentAnalysisType === "logistic") {
-                document.getElementById('chartExplanation').innerHTML = `
-                    <strong class="title">💡 グラフの見方（リピート倍率 / オッズ比とは？）</strong>
-                    <p>右に棒が伸びているほど、目標（${targetName}）に繋がりやすい「良い行動」です。<br>
-                    <strong>【オッズ比の例】</strong>もし『デザート』のオッズ比が <strong>2.5倍</strong> なら、デザートを頼んだお客様は、頼まなかったお客様に比べて <strong>2.5倍も次回リピートしやすい</strong>、という意味になります！（1.0なら影響なし、1未満なら逆効果です）<br>
-                    ※棒をタップすると、それぞれの項目の倍率が見れます。</p>
-                `;
+            let res;
+            if (isLogisticMode) {
+                document.getElementById('modeBadge').innerHTML = "🎯 モード判定：確率（0か1）の予測";
+                document.getElementById('modeBadge').style.backgroundColor = "#FF7A9A";
+                document.getElementById('oddsExplanation').style.display = "block";
+                res = runLogisticRegression(X, y);
             } else {
-                document.getElementById('chartExplanation').innerHTML = `
-                    <strong class="title">💡 グラフの見方（${isAmount ? "売上アップ額" : "アップ数"}）</strong>
-                    <p>右に棒が伸びているほど、目標の数字（${targetName}）を大きく引き上げてくれる「優秀な要素」です。<br>
-                    棒をタップすると、<strong>「その要素を1増やしたら、結果がどれくらい増えるか」</strong>が見れます！</p>
-                `;
+                document.getElementById('modeBadge').innerHTML = "💰 モード判定：金額や回数の予測";
+                document.getElementById('modeBadge').style.backgroundColor = "#2E7D32";
+                document.getElementById('oddsExplanation').style.display = "none";
+                res = runLinearRegression(X, y);
             }
 
-            drawChart(importanceData, isAmount);
-            
-            // ▼ 回帰分析の散布図グラフ描画 ▼
-            drawRegressionChart(X, y, featureNames, topFactorName, res, currentAnalysisType);
+            // 標準化されたt値(z値)の絶対値で重要度ランキングを作成 (ガチ仕様)
+            let importanceData = featureNames.map((name, i) => {
+                let j = i + 1;
+                let val = Math.abs(res.zValues[j]);
+                return { name: name, importance: val, coef: res.weights[i], index: i };
+            });
+            importanceData.sort((a, b) => b.importance - a.importance);
+            let topFactor = importanceData[0];
+            let topFactorName = topFactor.name;
 
-            // ガチ統計表と回帰式の生成
-            let eqText = currentAnalysisType === "logistic" ? `logit(p) = ${res.bias.toFixed(4)} <br>` : `y = ${formatNumber(res.bias)} <br>`;
+            let analysisComment = "";
+            if (isLogisticMode) {
+                analysisComment = `お店のファンを増やす一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> です！<br>`;
+                analysisComment += `「${topFactorName}」を強化する施策（声掛けやキャンペーン）を打つことで、常連さんがグッと増える可能性が高いです✨`;
+            } else {
+                analysisComment = `「${targetName}」をアップさせる一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> です！<br>`;
+                analysisComment += `「${topFactorName}」を意識したアプローチをすることで、目標の数字達成に大きく近づきます✨`;
+            }
+
+            document.getElementById('conclusion').innerHTML = `
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🎉 AI診断が完了しました！</div>
+                ${analysisComment}
+            `;
+            
+            drawMainChart(importanceData.map(d => d.name), importanceData.map(d => d.coef), isLogisticMode);
+            drawCurveChart(featureNames, topFactor.index, X, y, res, isLogisticMode);
+
+            // ▼ 専門家向け統計表の生成 ▼
+            let eqText = isLogisticMode ? `logit(p) = ` : `Y = `;
+            eqText += `${res.bias.toFixed(4)} <br>`;
             featureNames.forEach((name, i) => {
                 let sign = res.weights[i] >= 0 ? "+" : "-";
-                let wVal = currentAnalysisType === "logistic" ? Math.abs(res.weights[i]).toFixed(4) : formatNumber(Math.abs(res.weights[i]));
-                eqText += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sign} ${wVal} × ${name} <br>`;
+                eqText += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sign} ${Math.abs(res.weights[i]).toFixed(4)} × ${name} <br>`;
             });
 
             let statHtml = `
-                <div class="equation"><strong>[AIが導き出した方程式（回帰モデル）]</strong><br>${eqText}</div>
+                <div class="equation"><strong>[${isLogisticMode ? "ロジスティック回帰モデル" : "重回帰モデル"}]</strong><br>${eqText}</div>
                 <table class="stat-table">
-                    <thead><tr><th>変数</th><th>推定値 (β)</th><th>標準誤差 (SE)</th><th>p値</th>
-                    ${currentAnalysisType === "logistic" ? '<th>オッズ比</th><th>OR 95% CI</th>' : '<th>95% CI</th>'}
-                    </tr></thead><tbody>
-                    <tr><td>(Intercept)</td><td>${currentAnalysisType==="logistic" ? res.bias.toFixed(4) : formatNumber(res.bias)}</td><td>${res.stdErrors[0].toFixed(4)}</td><td>${res.pValues[0].toFixed(4)}</td>${currentAnalysisType === "logistic" ? '<td>-</td><td>-</td>' : '<td>-</td>'}</tr>
+                    <thead>
+                        <tr>
+                            <th>変数 (Features)</th><th>推定値 (β)</th><th>標準誤差 (SE)</th>
+                            <th>z値 (t値)</th><th>p値 (Pr>|z|)</th>
+                            ${isLogisticMode ? '<th>オッズ比</th><th>OR 95% CI</th>' : '<th>95% CI</th>'}
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
-            importanceData.forEach((d, i) => {
-                let p_idx = featureNames.indexOf(d.name) + 1;
-                let c_low = res.ci95[p_idx].lower; let c_up = res.ci95[p_idx].upper;
+            
+            // Intercept
+            statHtml += `<tr><td>(Intercept)</td><td>${res.bias.toFixed(4)}</td>
+                <td>${res.stdErrors[0] ? res.stdErrors[0].toFixed(4) : "NaN"}</td>
+                <td>${res.zValues[0] ? res.zValues[0].toFixed(4) : "NaN"}</td>
+                <td>${res.pValues[0] ? res.pValues[0].toFixed(4) : "NaN"} ${getSignificanceMark(res.pValues[0])}</td>`;
+            if(isLogisticMode) statHtml += `<td>-</td><td>-</td>`;
+            else statHtml += `<td>-</td>`;
+            statHtml += `</tr>`;
+
+            featureNames.forEach((name, i) => {
+                let j = i + 1;
+                let w = res.weights[i];
+                let se = res.stdErrors[j];
                 
-                statHtml += `<tr><td>${d.name}</td><td>${currentAnalysisType==="logistic" ? d.coef.toFixed(4) : formatNumber(d.coef)}</td><td>${res.stdErrors[p_idx].toFixed(4)}</td><td>${res.pValues[p_idx].toFixed(4)}</td>`;
+                statHtml += `<tr><td>${name}</td><td>${w.toFixed(4)}</td>
+                    <td>${se ? se.toFixed(4) : "NaN"}</td>
+                    <td>${res.zValues[j] ? res.zValues[j].toFixed(4) : "NaN"}</td>
+                    <td>${res.pValues[j] ? res.pValues[j].toFixed(4) : "NaN"} ${getSignificanceMark(res.pValues[j])}</td>`;
                 
-                if(currentAnalysisType === "logistic") {
-                    let or_low = Math.exp(c_low).toFixed(2); let or_up = Math.exp(c_up).toFixed(2);
-                    statHtml += `<td><strong style="color:#d32f2f;">${d.oddsRatio.toFixed(2)}</strong></td><td>[${or_low}, ${or_up}]</td>`;
+                if(isLogisticMode){
+                    let or = Math.exp(w);
+                    let ci_low = res.ci95[j] ? Math.exp(res.ci95[j].lower).toFixed(2) : "NaN";
+                    let ci_up  = res.ci95[j] ? Math.exp(res.ci95[j].upper).toFixed(2) : "NaN";
+                    statHtml += `<td><strong style="color:#d32f2f;">${or.toFixed(2)}</strong></td><td>[${ci_low}, ${ci_up}]</td>`;
                 } else {
-                    statHtml += `<td>[${formatNumber(c_low)}, ${formatNumber(c_up)}]</td>`;
+                    let ci_low = res.ci95[j] ? res.ci95[j].lower.toFixed(2) : "NaN";
+                    let ci_up  = res.ci95[j] ? res.ci95[j].upper.toFixed(2) : "NaN";
+                    statHtml += `<td>[${ci_low}, ${ci_up}]</td>`;
                 }
                 statHtml += `</tr>`;
             });
-            statHtml += `</tbody></table>`;
-            statHtml += `<div style="margin-top: 10px; font-weight:bold;">${currentAnalysisType === "logistic" ? "モデルの予測正解率 (Accuracy): " + analysisResultData.acc + "%" : "モデルの当てはまり度 (決定係数 R²): " + analysisResultData.r2}</div>`;
+            
+            statHtml += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 10px; line-height: 1.6;">
+                    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1<br>
+                    ${isLogisticMode 
+                        ? `McFadden's Pseudo R²: ${res.pseudoR2.toFixed(4)}<br>Model Accuracy: ${(res.accuracy * 100).toFixed(1)}%` 
+                        : `R-squared (R²): ${res.r2.toFixed(4)}`}
+                </div>
+            `;
             document.getElementById('statDetails').innerHTML = statHtml;
 
             document.getElementById('loading').style.display = 'none';
@@ -508,31 +567,34 @@
         }, 1200);
     });
 
-    function drawChart(dataList, isAmount) {
+    function drawMainChart(labels, data, isLogit) {
         const ctx = document.getElementById('myChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: dataList.map(d => d.name),
+                labels: labels,
                 datasets: [{
-                    label: 'お店の売上・ファン化への貢献度',
-                    data: dataList.map(d => d.stdCoef),
-                    backgroundColor: dataList.map(d => d.stdCoef > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
-                    borderColor: dataList.map(d => d.stdCoef > 0 ? '#FF7A9A' : '#6495ED'),
-                    borderWidth: 1, rawData: dataList, borderRadius: 5
+                    label: isLogit ? 'リピートへの影響力（係数）' : '目標数値への影響力（係数）',
+                    data: data,
+                    backgroundColor: data.map(v => v > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
+                    borderColor: data.map(v => v > 0 ? '#FF7A9A' : '#6495ED'),
+                    borderWidth: 1
                 }]
             },
             options: { 
                 indexAxis: 'y', responsive: true,
                 plugins: {
                     tooltip: {
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)', titleColor: '#333', bodyColor: '#E91E63', borderColor: '#FFC0CB', borderWidth: 1, padding: 12, displayColors: false,
                         callbacks: {
                             label: function(context) {
-                                let d = context.dataset.rawData[context.dataIndex];
-                                if(currentAnalysisType === "logistic") return `✨ リピート倍率: ${d.oddsRatio.toFixed(2)} 倍`;
-                                else return `✨ 1増えると結果が +${formatNumber(d.coef)}${isAmount ? " 円" : ""}！`;
+                                let val = context.raw;
+                                if(isLogit) {
+                                    let odds = Math.exp(val).toFixed(2);
+                                    return `✨ リピート倍率: ${odds}倍`;
+                                } else {
+                                    return `✨ 1増えると結果が ${Math.round(val).toLocaleString()} 変化`;
+                                }
                             }
                         }
                     }
@@ -541,88 +603,91 @@
         });
     }
 
-    function drawRegressionChart(X, y, featureNames, topFactorName, res, type) {
-        const ctx = document.getElementById('regressionChart').getContext('2d');
-        if (regChartInstance) regChartInstance.destroy();
-        
-        let topIndex = featureNames.indexOf(topFactorName);
-        let scatterData = X.map((row, i) => ({ x: row[topIndex], y: y[i] }));
-        
-        let xVals = scatterData.map(d => d.x);
-        let xMin = Math.min(...xVals); let xMax = Math.max(...xVals);
-        
-        let lineData = [];
-        for(let i=0; i<=50; i++) {
-            let xVal = xMin + (xMax - xMin) * (i / 50);
-            let val = res.bias;
-            for(let j=0; j<X[0].length; j++) {
-                if(j === topIndex) val += res.weights[j] * xVal;
-                else val += res.weights[j] * res.means[j]; // 他の変数は平均で固定
-            }
-            if(type === "logistic") {
-                lineData.push({x: xVal, y: 1 / (1 + Math.exp(-val))});
-            } else {
-                lineData.push({x: xVal, y: val});
-            }
+    function drawCurveChart(labels, X_idx, X_data, y_data, res, isLogit) {
+        const ctx = document.getElementById('curveChart').getContext('2d');
+        if (curveChartInstance) curveChartInstance.destroy();
+
+        let n = X_data[0].length;
+        let means = Array(n).fill(0);
+        for(let j=0; j<n; j++){
+            let sum = 0;
+            for(let i=0; i<X_data.length; i++) sum += X_data[i][j];
+            means[j] = sum / X_data.length;
         }
 
-        regChartInstance = new Chart(ctx, {
+        let scatterData = [];
+        for(let i=0; i<X_data.length; i++) {
+            scatterData.push({ x: X_data[i][X_idx], y: y_data[i] });
+        }
+
+        let minX = Math.min(...X_data.map(row => row[X_idx]));
+        let maxX = Math.max(...X_data.map(row => row[X_idx]));
+        let step = (maxX - minX) / 50;
+        if(step === 0) step = 1;
+
+        let lineData = [];
+        for(let val = minX; val <= maxX; val += step) {
+            let z = res.bias;
+            for(let j=0; j<n; j++){
+                if(j === X_idx) z += res.weights[j] * val;
+                else z += res.weights[j] * means[j];
+            }
+            // 修正：ロジスティック(確率)ならS字のシグモイド関数、重回帰(金額)なら直線のそのままのzを渡す
+            let y_pred = isLogit ? (1 / (1 + Math.exp(-z))) : z;
+            lineData.push({ x: val, y: y_pred });
+        }
+        
+        let z_last = res.bias;
+        for(let j=0; j<n; j++){
+            if(j === X_idx) z_last += res.weights[j] * maxX;
+            else z_last += res.weights[j] * means[j];
+        }
+        lineData.push({ x: maxX, y: isLogit ? (1 / (1 + Math.exp(-z_last))) : z_last });
+
+        curveChartInstance = new Chart(ctx, {
             type: 'scatter',
             data: {
-                datasets: [
-                    {
-                        label: '実際のお客様データ',
-                        data: scatterData,
-                        backgroundColor: 'rgba(100, 149, 237, 0.6)',
-                        borderColor: '#6495ED',
-                        pointRadius: 4
-                    },
-                    {
-                        label: type === 'logistic' ? 'AI予測確率 (シグモイド曲線)' : 'AI予測線 (回帰直線)',
-                        data: lineData,
-                        type: 'line',
-                        borderColor: '#E91E63',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
-                    }
-                ]
+                datasets: [{
+                    type: 'scatter',
+                    label: '実際のデータ',
+                    data: scatterData,
+                    backgroundColor: 'rgba(255, 122, 154, 0.5)'
+                }, {
+                    type: 'line',
+                    label: 'AIの予測線',
+                    data: lineData,
+                    borderColor: '#4A90E2',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0
+                }]
             },
             options: {
                 responsive: true,
                 scales: {
-                    x: { title: { display: true, text: topFactorName } },
-                    y: { title: { display: true, text: '目的変数 (ゴール)' } }
+                    x: { title: { display: true, text: labels[X_idx] } },
+                    y: { title: { display: true, text: isLogit ? '確率 (0〜1)' : '予測数値' } }
                 }
             }
         });
     }
 
-    document.getElementById('printBtn').addEventListener('click', () => { 
-        document.getElementById('statDetailsWrapper').open = true; 
-        setTimeout(() => window.print(), 300); 
+    // 🖨️ 印刷＆PDF保存
+    document.getElementById('printBtn').addEventListener('click', () => {
+        document.getElementById('statDetailsWrapper').open = true;
+        setTimeout(() => { window.print(); }, 300);
     });
 
-    document.getElementById('copyTextBtn').addEventListener('click', () => {
-        if(!analysisResultData) return;
-        let t = `【📊 AI無料データ分析診断】\n🎯 最も「${analysisResultData.target}」を向上させる鍵：\n「 ${analysisResultData.topFactor} 」\n\n▼ 要素ごとの影響力\n`;
-        analysisResultData.items.forEach(d => {
-            if(analysisResultData.type === "logistic") t += `・${d.name}: ${d.oddsRatio.toFixed(2)}倍\n`;
-            else t += `・${d.name}: 1増えると +${formatNumber(d.coef)}${analysisResultData.isAmount ? " 円" : ""}\n`;
-        });
-        navigator.clipboard.writeText(t).then(() => alert("✅ コピーしました！スタッフの皆さんに共有して目標にしましょう！"));
-    });
-
-    document.getElementById('twitterShareBtn').addEventListener('click', () => {
-        if(!analysisResultData) return;
-        let text = encodeURIComponent(`AIがお店のファンと売上UPのヒントを無料診断してくれました！📊✨\n私の店の最大の鍵は「${analysisResultData.topFactor}」でした！\n\n#店舗経営 #データ分析 #AI無料診断 `);
+    // 🐦 X (Twitter) シェア機能
+    document.getElementById('shareBtn').addEventListener('click', () => {
+        let text = encodeURIComponent(`【AIデータ分析】お店のデータを入れたら、売上アップの一番の鍵が発覚しました✨\n無料ですぐに分析できる神ツール👇\n`);
         let url = encodeURIComponent(window.location.href);
         window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
     });
 
-    document.getElementById('btcAddress').addEventListener('click', function() {
-        navigator.clipboard.writeText(this.innerText).then(() => alert("寄付アドレスをコピーしました！開発の励みになります💕"));
+    // 隠し寄付リンク（アラートなしで静かにコピー）
+    document.getElementById('donateBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").catch(e=>{});
     });
 </script>
 

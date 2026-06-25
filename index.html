@@ -64,11 +64,13 @@
         #resultArea { display: none; }
         .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
 
-        /* 💡 修正ポイント：画面外に飛ばすのをやめ、普段は完全にdisplay:noneで隠す */
+        /* 💡 修正ポイント: PDFのレイアウト崩れを防ぐため、A4幅(794px)で画面の左上に絶対固定する */
         #pdfReportContainer {
             display: none; 
-            width: 100%; max-width: 800px; margin: 0 auto; background: white; 
+            position: absolute; top: 0; left: 0;
+            width: 794px; background: white; 
             padding: 40px; color: #333; font-family: sans-serif; box-sizing: border-box;
+            z-index: 9999; /* 他の要素より手前に出す */
         }
         .report-section { margin-bottom: 30px; }
         .report-h1 { color: #E91E63; text-align: center; font-size: 28px; border-bottom: 3px solid #FFC0CB; padding-bottom: 10px;}
@@ -302,8 +304,32 @@
         });
     });
 
+    // 💡 修正ポイント: CSVの自動文字化け解消（Shift_JIS と UTF-8 の自動判定）
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
-        Papa.parse(e.target.files[0], {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // まずはExcelで一般的な「Shift_JIS」として読み込んでみる
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            let text = evt.target.result;
+            // もしテキスト内に文字化け特有の記号「」が含まれていたら、UTF-8として読み直す
+            if (text.includes('')) {
+                const readerUtf8 = new FileReader();
+                readerUtf8.onload = function(evt2) {
+                    parseCSVText(evt2.target.result);
+                };
+                readerUtf8.readAsText(file, 'UTF-8');
+            } else {
+                parseCSVText(text);
+            }
+        };
+        reader.readAsText(file, 'Shift_JIS');
+    });
+
+    // テキストデータをCSVとして解析する共通関数
+    function parseCSVText(csvText) {
+        Papa.parse(csvText, {
             header: true, dynamicTyping: true, skipEmptyLines: true,
             complete: function(res) {
                 if(res.data.length === 0) return alert("データが空です");
@@ -312,7 +338,8 @@
                 renderPreviewTable();
             }
         });
-    });
+    }
+
     generateSampleData();
 
     document.getElementById('analyzeBtn').addEventListener('click', () => {
@@ -372,10 +399,6 @@
             document.getElementById('analyzeBtn').style.display = 'block';
             document.getElementById('resultArea').style.display = 'block';
 
-            setTimeout(() => {
-                document.getElementById('reportChartImg').src = chartInstance.toBase64Image();
-            }, 1000);
-
         }, 500);
     });
 
@@ -392,32 +415,44 @@
                     borderColor: data.map(v => v > 0 ? '#FF7A9A' : '#A9A9A9'), borderWidth: 1
                 }]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true } }, animation: { duration: 800 } }
+            options: { 
+                responsive: true, 
+                scales: { y: { beginAtZero: true } }, 
+                animation: { 
+                    duration: 800,
+                    // 💡 修正ポイント: グラフのアニメーションが完全に終わった瞬間に、PDF用の画像を自動生成する
+                    onComplete: function() {
+                        document.getElementById('reportChartImg').src = chartInstance.toBase64Image();
+                    }
+                } 
+            }
         });
     }
 
-    // 💡 修正ポイント：PDF生成時にメイン画面を隠し、レポートを確実に見える状態にしてから撮影する
+    // 💡 修正ポイント: PDF見切れ問題の完全解消（スクロール位置リセット）
     document.getElementById('downloadBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
         if (code === "2026BASE") {
-            // ローディング演出
             alert("✅ 決済が確認できました！\nPDFレポートを生成します（数秒かかります）。");
             
             const mainUi = document.getElementById('mainUiContainer');
             const reportEl = document.getElementById('pdfReportContainer');
             
-            // 一時的にメイン画面を消して、レポートを画面のど真ん中に表示させる（確実な描画のため）
+            // ★超重要：画面が下に行っていると見切れるので、強制的に一番上に戻す
+            window.scrollTo(0, 0);
+            
+            // メイン画面を消して、レポートを画面左上(0, 0)に絶対配置する
             mainUi.style.display = 'none';
             reportEl.style.display = 'block';
             
             html2pdf().set({
-                margin: 15,
+                margin: [10, 0, 10, 0], // 上と下にマージンを設定
                 filename: 'AI_Repeat_Report.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 800 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).from(reportEl).save().then(() => {
-                // PDF出力が終わったら、レポートを隠してメイン画面を復活させる
+                // PDF出力が終わったら元に戻す
                 reportEl.style.display = 'none';
                 mainUi.style.display = 'block';
             });

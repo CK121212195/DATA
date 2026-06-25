@@ -291,12 +291,33 @@
             const arr = new Uint8Array(event.target.result);
             const detected = Encoding.detect(arr);
             const str = Encoding.convert(arr, { to: 'UNICODE', from: detected || 'AUTO', type: 'string' });
+            
             Papa.parse(str, {
                 header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(res) {
                     if(res.data.length === 0) return alert("データが空です");
                     currentColumns = Object.keys(res.data[0]);
-                    currentData = res.data.map(row => currentColumns.map(col => Number(row[col]) || 0));
+
+                    // ▼▼ AIが文字列（男性/女性、名前など）を自動で数字に変換する神機能 ▼▼
+                    let encoders = {};
+                    currentColumns.forEach(col => {
+                        // その列に文字が含まれているかチェック
+                        let isText = res.data.some(row => typeof row[col] === 'string' && isNaN(Number(row[col])));
+                        if(isText) {
+                            // 文字列だった場合、自動で 0, 1, 2... と番号を割り当てる
+                            let unique = [...new Set(res.data.map(r => r[col]))];
+                            encoders[col] = {};
+                            unique.forEach((val, idx) => encoders[col][val] = idx);
+                        }
+                    });
+
+                    currentData = res.data.map(row => {
+                        return currentColumns.map(col => {
+                            if(encoders[col] !== undefined) return encoders[col][row[col]]; // 変換した数字を入れる
+                            return Number(row[col]) || 0;
+                        });
+                    });
+                    
                     processDataPreview();
                 }
             });
@@ -317,9 +338,9 @@
         } else if (text.includes("指名") || text.includes("カラー") || text.includes("カット") || text.includes("トリートメント") || text.includes("スタッフ")) {
             industry = "✂️ 美容室・サロン";
             advice = `【AIからの提案】影響力が高かった「${topFactor}」を「初回お試し価格」で提供し、体験してもらう機会を増やしましょう。<br>次回は『店販商品（シャンプー等）の購入有無(1=あり)』をデータに足すと、LTV（生涯顧客価値）の分析が深まります！`;
-        } else if (text.includes("体験") || text.includes("入会") || text.includes("レッスン")) {
-            industry = "🏋️ スクール・フィットネス";
-            advice = `【AIからの提案】「${topFactor}」が成約や継続の最大のフックになっています。これを前面に押し出した広告を作りましょう！`;
+        } else if (text.includes("体験") || text.includes("入会") || text.includes("レッスン") || text.includes("国語") || text.includes("算数")) {
+            industry = "🏫 スクール・教育系";
+            advice = `【AIからの提案】「${topFactor}」が目標達成の最大のフックになっています。これを前面に押し出したアプローチをしましょう！`;
         }
         return { industry, advice };
     }
@@ -329,13 +350,15 @@
         let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
         return x > 0 ? 1 - p : p;
     }
+    
+    // 逆行列計算（失敗時は null を返す）
     function invertMatrix(M) {
         let n = M.length; let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
         let A = M.map(row => [...row]);
         for (let i = 0; i < n; i++) {
             let maxEl = Math.abs(A[i][i]); let maxRow = i;
             for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
-            if (maxEl === 0) return null;
+            if (maxEl === 0) return null; // 行列が特異（計算不可）の場合
             for (let k = 0; k < n; k++) { [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]]; [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]]; }
             let pivot = A[i][i];
             for (let k = 0; k < n; k++) { A[i][k] /= pivot; I[i][k] /= pivot; }
@@ -371,15 +394,18 @@
             for(let r=0; r<=n; r++) for(let c=0; c<=n; c++) H[r][c] += Xd[r]*Xd[c]*wt;
             if((p>=0.5?1:0)===y[i]) correct++;
         }
-        let cov = invertMatrix(H); let se = Array(n+1).fill(0), pVal = Array(n+1).fill(0), ci95 = Array(n+1).fill(null);
+        let cov = invertMatrix(H); 
+        // ▼ エラー回避：計算できない場合はエラーフラグを返す ▼
+        if(!cov) return { error: true };
+
+        let se = Array(n+1).fill(0), pVal = Array(n+1).fill(0), ci95 = Array(n+1).fill(null);
         let params = [origB, ...origW];
-        if(cov) {
-            for(let j=0; j<=n; j++) {
-                se[j] = Math.sqrt(Math.max(0, cov[j][j]));
-                pVal[j] = 2*(1-normalCDF(Math.abs(params[j]/(se[j]||1e-9))));
-                ci95[j] = { lower: params[j] - 1.96 * se[j], upper: params[j] + 1.96 * se[j] };
-            }
+        for(let j=0; j<=n; j++) {
+            se[j] = Math.sqrt(Math.max(0, cov[j][j]));
+            pVal[j] = 2*(1-normalCDF(Math.abs(params[j]/(se[j]||1e-9))));
+            ci95[j] = { lower: params[j] - 1.96 * se[j], upper: params[j] + 1.96 * se[j] };
         }
+        
         return { type: "logistic", weights: origW, stdWeights: w, bias: origB, stdErrors: se, pValues: pVal, ci95: ci95, accuracy: correct/m, means: means };
     }
 
@@ -392,7 +418,11 @@
         let Xd = X.map(r => [1, ...r]);
         let XtX = Array(k).fill(0).map(()=>Array(k).fill(0));
         for(let i=0; i<m; i++) for(let r=0; r<k; r++) for(let c=0; c<k; c++) XtX[r][c]+=Xd[i][r]*Xd[i][c];
+        
         let XtX_inv = invertMatrix(XtX);
+        // ▼ エラー回避：計算できない場合はエラーフラグを返す ▼
+        if(!XtX_inv) return { error: true };
+
         let Xty = Array(k).fill(0);
         for(let i=0; i<m; i++) for(let r=0; r<k; r++) Xty[r]+=Xd[i][r]*y[i];
         
@@ -435,6 +465,14 @@
 
             let res = currentAnalysisType === "logistic" ? runLogistic(X, y) : runLinear(X, y);
 
+            // ▼ フリーズ回避のメッセージ ▼
+            if(res.error) {
+                alert("💦 【AIからのお願い】\n計算の途中でエラーが発生しました。\n\n・「全員が同じ数字」になっている列\n・「名前」など全員がバラバラすぎる列\n・項目同士が似すぎている列\n\nこれらがあるとAIが混乱してしまいます。\n不要な列を削除して、もう一度お試しください！");
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('analyzeBtn').style.display = 'block';
+                return;
+            }
+
             let importanceData = featureNames.map((name, i) => {
                 return { 
                     name: name, coef: res.weights[i], stdCoef: res.stdWeights[i], 
@@ -457,8 +495,8 @@
 
             let msg = `
                 <div style="font-size: 22px; font-weight: bold; margin-bottom: 15px; color:#E91E63;">🎉 診断が完了しました！</div>
-                お店の「${targetName}」を引き上げる最大の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！<br>
-                この要素を少し工夫するだけで、お店の数字がグッと良くなる可能性が高いです✨
+                「${targetName}」を引き上げる最大の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！<br>
+                この要素を少し工夫するだけで、数字がグッと良くなる可能性が高いです✨
             `;
             document.getElementById('conclusion').innerHTML = msg;
 
@@ -478,7 +516,6 @@
             }
 
             drawChart(importanceData, isAmount);
-            
             drawRegressionChart(X, y, res, currentAnalysisType);
 
             // ガチ統計表と回帰式の生成

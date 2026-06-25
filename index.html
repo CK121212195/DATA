@@ -117,8 +117,8 @@
                 <span style="font-size:12px;">ゴールは必ず「1(はい)」「0(いいえ)」にします。</span>
                 <table class="example-table">
                     <tr><th>客単価</th><th>デザート</th><th class="goal">次も来たか？(ゴール)</th></tr>
-                    <tr><td>1500</td><td>1 (はい)</td><td class="goal">1 (はい)</td></tr>
-                    <tr><td>800</td><td>0 (いいえ)</td><td class="goal">0 (いいえ)</td></tr>
+                    <tr><td>1,500円</td><td>1 (はい)</td><td class="goal">1 (はい)</td></tr>
+                    <tr><td>800円</td><td>0 (いいえ)</td><td class="goal">0 (いいえ)</td></tr>
                 </table>
             </div>
             <div style="flex: 1; min-width: 280px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #A9C9EE;">
@@ -127,8 +127,8 @@
                 <span style="font-size:12px;">ゴールには実際の金額や回数を入れます。</span>
                 <table class="example-table">
                     <tr><th>滞在時間</th><th>トリートメント</th><th class="goal">最終売上(ゴール)</th></tr>
-                    <tr><td>90</td><td>1 (はい)</td><td class="goal">12500</td></tr>
-                    <tr><td>45</td><td>0 (いいえ)</td><td class="goal">4000</td></tr>
+                    <tr><td>90</td><td>1 (はい)</td><td class="goal">12,500円</td></tr>
+                    <tr><td>45</td><td>0 (いいえ)</td><td class="goal">4,000円</td></tr>
                 </table>
             </div>
         </div>
@@ -178,12 +178,11 @@
 
         <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 35px 0;">
 
-        <h2 id="step3">🎁 3. 分析結果を保存・シェアする（完全無料）</h2>
+        <h2 id="step3">🎁 3. 分析結果を保存・シェアする</h2>
         <p>融資の提出や、スタッフ会議にそのまま使える機能です。お店の宣伝にもお使いください！</p>
         
         <div class="btn-group">
             <button class="btn" id="printBtn" style="background-color: #4A90E2;">🖨️ PDFとして保存 / 印刷</button>
-            <button class="btn btn-outline" id="copyTextBtn">📋 テキスト結果をコピー</button>
             <button class="btn btn-twitter" id="twitterShareBtn">🐦 X (Twitter) でシェアする</button>
         </div>
     </div>
@@ -604,16 +603,6 @@
         setTimeout(() => window.print(), 300); 
     });
 
-    document.getElementById('copyTextBtn').addEventListener('click', () => {
-        if(!analysisResultData) return;
-        let t = `【📊 AI無料データ分析診断】\n🎯 最も「${analysisResultData.target}」を向上させる鍵：\n「 ${analysisResultData.topFactor} 」\n\n▼ 要素ごとの影響力\n`;
-        analysisResultData.items.forEach(d => {
-            if(analysisResultData.type === "logistic") t += `・${d.name}: ${d.oddsRatio.toFixed(2)}倍\n`;
-            else t += `・${d.name}: 1増えると +${formatNumber(d.coef)}${analysisResultData.isAmount ? " 円" : ""}\n`;
-        });
-        navigator.clipboard.writeText(t).then(() => alert("✅ コピーしました！スタッフの皆さんに共有して目標にしましょう！"));
-    });
-
     document.getElementById('twitterShareBtn').addEventListener('click', () => {
         if(!analysisResultData) return;
         let text = encodeURIComponent(`AIがお店のファンと売上UPのヒントを無料診断してくれました！📊✨\n私の店の最大の鍵は「${analysisResultData.topFactor}」でした！\n\n#店舗経営 #データ分析 #AI無料診断 `);
@@ -622,7 +611,7 @@
     });
 
     document.getElementById('btcAddress').addEventListener('click', function() {
-        navigator.clipboard.writeText(this.innerText).then(() => alert("寄付アドレスをコピーしました！開発の励みになります💕"));
+        navigator.clipboard.writeText(this.innerText);
     });
 </script>
 

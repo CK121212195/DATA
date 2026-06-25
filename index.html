@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>AIリピート診断アプリ</title>
-    <!-- stliteの最新安定版を読み込み -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.css"/>
   </head>
   <body>
@@ -12,9 +11,19 @@
     <script>
       stlite.mount({
         requirements: ["pandas", "numpy", "scikit-learn"],
-        // 最新の仕様：仮想的にファイルシステムを作る書き方に変更
         entrypoint: "streamlit_app.py",
         files: {
+          // --- 🎨 デザイン設定ファイル（明るく可愛いテーマを強制） ---
+          ".streamlit/config.toml": `
+[theme]
+base="light"
+primaryColor="#FF7A9A"
+backgroundColor="#FFFFFF"
+secondaryBackgroundColor="#FFF0F5"
+textColor="#4A4A4A"
+font="sans serif"
+          `,
+          // --- 🐍 メインのPythonコード ---
           "streamlit_app.py": `
 import streamlit as st
 import pandas as pd
@@ -22,89 +31,109 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 import time
 
-# 画面の基本設定
-st.set_page_config(page_title="AIリピート診断", page_icon="🍽️", layout="centered")
+# 画面設定
+st.set_page_config(page_title="常連さん発見AI", page_icon="🌷", layout="centered")
 
-# タイトル
-st.title("🍽️ 常連客は誰だ？ AIリピート診断")
-st.write("お店のデータを入れるだけで、「どんなお客さんがリピートしやすいか」をAIがズバッと判定します。難しい統計の知識は一切不要です！")
+# タイトル（絵文字と文体を柔らかく）
+st.title("🌷 常連さん発見AI 診断ルーム")
+st.write("お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨ 難しい計算はお任せください！")
 
-st.markdown("### 1. データの準備")
-data_source = st.radio("分析するデータを選んでください：", ["✨ サンプルデータで今すぐ試す（おすすめ）", "📁 自分のデータ(CSV)をアップロードする"])
+st.markdown("### 🌸 1. データの準備")
+data_source = st.radio("分析するデータを選んでみましょう👇", ["✨ サンプルデータでまずは試す（おすすめ！）", "📁 自分のデータ(CSV)をアップロードする"])
 
 df = None
 if "サンプル" in data_source:
-    st.info("💡 架空のカフェのデータ（100件）をセットしました。このまま進んでください！")
-    # ダミーデータの生成
+    st.info("💡 架空のカフェのデータ（100件）をご用意しました。このまま進んでみてくださいね！")
+    # ダミーデータ生成
     np.random.seed(42)
     df = pd.DataFrame({
         "客単価(円)": np.random.randint(800, 3000, 100),
         "滞在時間(分)": np.random.randint(20, 120, 100),
-        "デザート注文(あり=1)": np.random.choice([0, 1], 100),
-        "クーポン利用(あり=1)": np.random.choice([0, 1], 100),
+        "デザート注文(1=あり)": np.random.choice([0, 1], 100),
+        "クーポン利用(1=あり)": np.random.choice([0, 1], 100),
     })
-    # デザート注文がリピートに強く影響する設定
-    prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(あり=1)"] + 0.5*df["クーポン利用(あり=1)"])))
-    df["次回来店したか(はい=1)"] = (np.random.rand(100) < prob).astype(int)
+    # ロジック生成（デザートとクーポンが影響大）
+    prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(1=あり)"] + 0.5*df["クーポン利用(1=あり)"])))
+    df["次回来店したか(1=はい)"] = (np.random.rand(100) < prob).astype(int)
     st.dataframe(df.head(3), use_container_width=True)
 else:
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
+    uploaded_file = st.file_uploader("お手持ちのCSVファイルを入れてください🎵", type=["csv"])
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-        st.success("データの読み込みに成功しました！")
+        st.success("データを受け取りました！ばっちりです✨")
         st.dataframe(df.head(3), use_container_width=True)
 
 if df is not None:
-    st.markdown("### 2. AI診断（無料プレビュー）")
+    st.markdown("### 🪄 2. AI無料診断プレビュー")
     if st.button("🔮 ワンタップで分析スタート！", type="primary"):
-        with st.spinner("AIがデータを読み解いています... (初回のみ10秒ほどかかります)"):
-            time.sleep(2)
+        with st.spinner("AIがお客様の心を読み解いています... (初回のみ少し時間がかかります☕)"):
+            time.sleep(1.5)
             
-            # ロジスティック回帰分析
-            X = df.drop("次回来店したか(はい=1)", axis=1)
-            y = df["次回来店したか(はい=1)"]
+            # ロジスティック回帰分析の実行
+            X = df.drop("次回来店したか(1=はい)", axis=1)
+            y = df["次回来店したか(1=はい)"]
+            
             model = LogisticRegression()
             model.fit(X, y)
+            accuracy = model.score(X, y) # 正解率
             
+            # 回帰係数とオッズ比（影響度）の計算
             coef = model.coef_[0]
-            importance = pd.DataFrame({"要素": X.columns, "影響度": coef})
-            importance = importance.sort_values(by="影響度", ascending=False)
+            odds_ratios = np.exp(coef)
             
-            # 結果をセッションに保存
+            importance = pd.DataFrame({
+                "分析要素": X.columns, 
+                "影響スコア(回帰係数)": coef,
+                "リピート倍率(オッズ比)": odds_ratios
+            })
+            importance = importance.sort_values(by="影響スコア(回帰係数)", ascending=False)
+            
+            # セッションに結果を保存
             st.session_state["analyzed"] = True
-            st.session_state["top_factor"] = importance.iloc[0]["要素"]
+            st.session_state["top_factor"] = importance.iloc[0]["分析要素"]
             st.session_state["importance"] = importance
+            st.session_state["accuracy"] = accuracy
 
-# 分析結果の表示
+# 分析結果の表示エリア
 if st.session_state.get("analyzed"):
     top = st.session_state["top_factor"]
-    st.success(f"🎉 分析完了！一番リピートに繋がっているのはズバリ **『{top}』** です！")
+    acc = st.session_state["accuracy"]
+    imp_df = st.session_state["importance"]
     
-    st.write("▼ 各要素がリピートに与える影響の強さ")
-    st.bar_chart(st.session_state["importance"].set_index("要素"))
+    st.success(f"🎉 分析完了！お店のファンを増やす一番の鍵は ズバリ **『{top}』** でした！")
+    
+    st.write("▼ 要素ごとの影響力グラフ")
+    st.bar_chart(imp_df.set_index("分析要素")["影響スコア(回帰係数)"])
+    
+    # 🌟 エビデンス（嘘だと思われないための専門データ）
+    with st.expander("📊 専門家向け：AI分析のエビデンス（計算根拠）"):
+        st.write("当サービスは、統計学における**「ロジスティック回帰分析」**を用いて結果を算出しています。")
+        st.markdown(f"**■ モデルの予測正解率 (Accuracy):** `{acc*100:.1f}%`")
+        st.write("各要素が「リピート確率」にどれだけ影響を与えているかの詳細数値（オッズ比など）です。数値が大きいほど影響力が強いことを示します。")
+        st.dataframe(imp_df, use_container_width=True)
     
     st.markdown("---")
-    st.markdown("### 🔒 3. プロ仕様の詳細レポートを発行 (500円)")
-    st.write("銀行の融資資料や、スタッフとの作戦会議にそのまま使える「具体的な改善アクション」付きの詳細レポートを発行します。")
+    st.markdown("### 🎁 3. プロ仕様の詳細レポートを発行 (500円)")
+    st.write("明日からすぐにお店で使える「具体的な売上アップのアクションプラン」付きの詳細レポートを発行します💌")
     
-    st.link_button("💳 Squareで決済してパスコードを入手（500円）", "https://square.link/YOUR_DUMMY_LINK")
+    st.link_button("💳 Squareで決済してパスコードを入手する（500円）", "https://square.link/YOUR_DUMMY_LINK")
     st.caption("※ 決済完了画面に表示される「パスコード」を下に入力してください。")
     
     passcode = st.text_input("🔑 パスコードを入力", type="password")
     
     if passcode == "2026BASE":
-        st.success("✅ 決済が確認できました！ありがとうございます。")
+        st.success("✅ 決済が確認できました！ありがとうございます💕")
         
-        # レポート用テキスト（エラー回避のためPythonの三連クォートに変更）
         report_text = f"""【AIリピート診断 詳細レポート】
 
 ■ 結論:
-あなたの店舗で最もリピートに貢献している要素は「{top}」です。
+あなたのお店で最もリピートに貢献している要素は「{top}」です。
+（AIの予測正解率: {acc*100:.1f}%）
 
-■ 明日からのアクション:
-この要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、顧客への声掛けを徹底してください。
+■ 明日からのアクションプラン:
+この要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、お客様への声掛けを徹底してください。
 
-※このデータはブラウザ上で安全に計算されました。"""
+※この分析はお客様の端末上で安全に計算されました。データは外部に送信されていません。"""
         
         st.download_button(
             label="📄 詳細レポートをダウンロード",
@@ -114,7 +143,7 @@ if st.session_state.get("analyzed"):
             type="primary"
         )
     elif passcode != "":
-        st.error("パスコードが間違っています。")
+        st.error("パスコードが間違っているようです💦")
 `
         }
       }, document.getElementById("root"));

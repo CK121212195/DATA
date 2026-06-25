@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 お店のファン＆売上UP発見AIルーム</title>
+
+    <!-- ▼ ファビコン設定 ▼ -->
+    <link rel="icon" href="https://あなたのGitHubのURL/favicon.png" type="image/png">
+    
+    <!-- ▼ OGP (SNSシェア用の画像・テキスト設定) ▼ -->
+    <meta property="og:title" content="🌷 お店のファン＆売上UP発見AIルーム">
+    <meta property="og:description" content="エクセルを入れるだけ！AIが「お店のファンが増えない理由」や「売上アップの最大の鍵」を無料で診断します。データはサーバーに送られないので安心です。">
+    <meta property="og:url" content="https://あなたのGitHubのURL/">
+    <meta property="og:image" content="https://あなたのGitHubのURL/OGP.png">
+    <meta property="og:type" content="website">
+
+    <!-- ▼ Twitter Card設定 ▼ -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🌷 お店のファン＆売上UP発見AIルーム">
+    <meta name="twitter:description" content="エクセルを入れるだけ！AIが「お店のファンが増えない理由」や「売上アップの最大の鍵」を無料で診断します。">
+    <meta name="twitter:image" content="https://あなたのGitHubのURL/OGP.png">
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-CV6S6GW8PC"></script>
@@ -463,7 +479,6 @@
 
             drawChart(importanceData, isAmount);
             
-            // ▼ 回帰分析の散布図グラフ描画（ここを修正） ▼
             drawRegressionChart(X, y, res, currentAnalysisType);
 
             // ガチ統計表と回帰式の生成
@@ -540,7 +555,6 @@
         });
     }
 
-    // ▼▼ ここが「実測値 vs 予測値」になるよう修正された関数 ▼▼
     function drawRegressionChart(X, y, res, type) {
         const ctx = document.getElementById('regressionChart').getContext('2d');
         if (regChartInstance) regChartInstance.destroy();
@@ -549,7 +563,6 @@
         let lineData = [];
 
         if (type === "logistic") {
-            // X軸: AI総合スコア(z), Y軸: 実際のデータ(0か1)
             let zVals = [];
             for(let i=0; i<X.length; i++) {
                 let z = res.bias;
@@ -579,7 +592,6 @@
                 }
             });
         } else {
-            // X軸: AIの予測数値, Y軸: 実際の数値
             let yPredVals = [];
             for(let i=0; i<X.length; i++) {
                 let y_pred = res.bias;
@@ -590,7 +602,6 @@
             
             let minVal = Math.min(...yPredVals, ...y);
             let maxVal = Math.max(...yPredVals, ...y);
-            // 完璧な予測線 (y = x)
             lineData = [ { x: minVal, y: minVal }, { x: maxVal, y: maxVal } ];
 
             regChartInstance = new Chart(ctx, {
@@ -620,7 +631,7 @@
     document.getElementById('twitterShareBtn').addEventListener('click', () => {
         if(!analysisResultData) return;
         let text = encodeURIComponent(`AIがお店のファンと売上UPのヒントを無料診断してくれました！📊✨\n私の店の最大の鍵は「${analysisResultData.topFactor}」でした！\n\n#店舗経営 #データ分析 #AI無料診断 `);
-        let url = encodeURIComponent(window.location.href);
+        let url = encodeURIComponent("https://あなたのGitHubのURL/");
         window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
     });
 

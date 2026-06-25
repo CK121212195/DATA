@@ -5,67 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 常連さん発見AI 診断ルーム</title>
     
-    <!-- 必要なのはこの2つだけ！（CSV読み込み用とグラフ描画用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* 🌸 女性向け・可愛いピンクのUIデザイン */
         body {
-            background-color: #FFF0F5;
-            color: #4A4A4A;
+            background-color: #FFF0F5; color: #4A4A4A;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
             margin: 0; padding: 20px;
         }
         .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background: #FFFFFF;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(255, 122, 154, 0.1);
+            max-width: 700px; margin: 0 auto; background: #FFFFFF;
+            padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(255, 122, 154, 0.1);
         }
         h1 { color: #FF7A9A; text-align: center; font-size: 24px; }
         h2 { font-size: 18px; border-bottom: 2px solid #FFE4E1; padding-bottom: 5px; margin-top: 30px;}
         p { line-height: 1.6; }
         
-        /* ボタンのデザイン */
+        /* 💡 優しい解説用のヒントボックス */
+        .explanation-box {
+            background-color: #FFF9FA; border-left: 4px solid #FFC0CB;
+            padding: 12px 15px; margin-bottom: 20px; border-radius: 4px; font-size: 14px;
+        }
+        .explanation-box p { margin: 6px 0; }
+        
+        /* マーカー風の強調 */
+        .marker {
+            background: linear-gradient(transparent 60%, #FFC0CB 60%);
+            font-weight: bold; font-size: 18px; color: #E91E63;
+        }
+
         .btn {
-            background-color: #FF7A9A; color: white;
-            border: none; padding: 15px 20px; border-radius: 8px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            width: 100%; transition: background-color 0.3s;
+            background-color: #FF7A9A; color: white; border: none; padding: 15px 20px; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s;
             margin-top: 15px; box-sizing: border-box; text-align: center;
         }
         .btn:hover { background-color: #FF5C83; }
-        .btn:disabled { background-color: #FFC0CB; cursor: not-allowed; }
         
-        /* リンクボタン（Square決済用など） */
         .link-btn {
-            display: inline-block; background-color: #4A90E2; color: white;
-            text-decoration: none; padding: 12px 20px; border-radius: 8px;
-            font-weight: bold; width: 100%; box-sizing: border-box; text-align: center; margin-top: 10px;
+            display: inline-block; background-color: #4A90E2; color: white; text-decoration: none;
+            padding: 12px 20px; border-radius: 8px; font-weight: bold; width: 100%; box-sizing: border-box; 
+            text-align: center; margin-top: 10px;
         }
         
-        /* 入力フォーム類 */
         .radio-group { margin-bottom: 20px; }
-        .radio-group label { display: block; margin: 8px 0; cursor: pointer; font-weight: bold;}
+        .radio-group label { display: block; margin: 12px 0; cursor: pointer; font-weight: bold;}
         input[type="file"] { margin: 10px 0; padding: 10px; border: 1px dashed #FF7A9A; border-radius: 8px; width: 100%; box-sizing: border-box;}
         input[type="password"] { padding: 12px; border: 1px solid #FFC0CB; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 16px;}
         
-        /* テーブルデザイン */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { border: 1px solid #FFE4E1; padding: 8px; text-align: center; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+        th, td { border: 1px solid #FFE4E1; padding: 8px 12px; text-align: center; }
         th { background-color: #FFF0F5; color: #FF7A9A; }
         
-        /* エビデンス等のアコーディオン */
         details { background: #F9F9F9; padding: 10px; border-radius: 8px; margin-top: 20px; cursor: pointer; }
-        summary { font-weight: bold; color: #333; outline: none; }
+        summary { font-weight: bold; color: #333; outline: none; padding: 5px 0;}
         
-        /* ローディング・結果エリアの表示制御 */
         #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
         #resultArea { display: none; }
-        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 15px; border-radius: 8px; font-weight: bold; margin: 20px 0;}
+        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
     </style>
 </head>
 <body>
@@ -76,6 +74,14 @@
 
     <!-- 1. データ準備エリア -->
     <h2>🌸 1. データの準備</h2>
+    
+    <div class="explanation-box">
+        <p><strong>❓ 何を準備すればいいの？</strong></p>
+        <p>お店の過去のデータから、<strong>「お客様の特徴（使った金額など）」</strong>と<strong>「その人が次も来てくれたか？」</strong>をまとめた表（CSV）をご用意ください。</p>
+        <p><strong>💡 「1=あり」「0=なし」って何？</strong></p>
+        <p>AIは文字を読むのが苦手です。なので、「デザートを頼んだら <strong>1</strong>、頼まなかったら <strong>0</strong>」のように、YES/NOを数字の1と0に置き換えてあげてください。これを専門用語で「ダミー変数」と呼びますが、要は<strong>「1＝はい」「0＝いいえ」</strong>のお約束です！</p>
+    </div>
+
     <div class="radio-group">
         <label><input type="radio" name="dataSource" value="sample" checked> ✨ サンプルデータでまずは試す（おすすめ！）</label>
         <label><input type="radio" name="dataSource" value="csv"> 📁 自分のデータ(CSV)をアップロードする</label>
@@ -87,7 +93,7 @@
 
     <div id="dataPreviewArea">
         <p style="font-size: 14px; color: #666;">💡 架空のカフェのデータ（100件）をご用意しました。このまま進んでみてください！</p>
-        <div style="overflow-x: auto;">
+        <div class="table-wrapper">
             <table id="previewTable"></table>
         </div>
     </div>
@@ -95,7 +101,7 @@
     <!-- 2. 分析実行エリア -->
     <h2>🪄 2. AI無料診断プレビュー</h2>
     <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
-    <div id="loading">✨ AIがお客様の心を読み解いています... (ちょっと待ってね☕)</div>
+    <div id="loading">✨ AIがお客様のデータを読み解いています... (ちょっと待ってね☕)</div>
 
     <!-- 3. 結果表示エリア -->
     <div id="resultArea">
@@ -105,10 +111,19 @@
         <canvas id="myChart"></canvas>
 
         <details>
-            <summary>📊 専門家向け：AI分析のエビデンス（計算根拠）</summary>
+            <summary>📊 専門家・詳細な数字が見たい方向け（計算根拠）</summary>
+            
+            <div class="explanation-box" style="margin-top: 15px;">
+                <p><strong>💡 リピート倍率（オッズ比）って何？</strong></p>
+                <p>「その行動をした人が、しなかった人に比べて<strong>何倍リピートしやすいか</strong>」を表す数字です。<br>
+                例えばここが「3.0倍」なら、その行動をした人は<strong>3倍も常連になりやすい</strong>という強力な武器になります！</p>
+            </div>
+
             <p>当サービスは、統計学における<strong>「ロジスティック回帰分析」</strong>を用いて算出しています。</p>
             <p id="accuracyText"></p>
-            <table id="evidenceTable"></table>
+            <div class="table-wrapper">
+                <table id="evidenceTable"></table>
+            </div>
         </details>
 
         <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 30px 0;">
@@ -125,16 +140,12 @@
 </div>
 
 <script>
-    // --- 🌍 アプリのグローバル変数 ---
-    let currentColumns = []; // 列の名前
-    let currentData = [];    // データの配列 [[値, 値...], [値, 値...]]
+    let currentColumns = [];
+    let currentData = [];
     let chartInstance = null;
     let topFactorName = "";
     let modelAccuracy = 0;
 
-    // --- 🛠️ 1. データ準備（サンプル生成とCSV読み込み） ---
-    
-    // サンプルデータ生成関数
     function generateSampleData() {
         currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(1=はい)"];
         currentData = [];
@@ -143,7 +154,6 @@
             let time = Math.floor(Math.random() * 100) + 20;
             let dessert = Math.random() < 0.5 ? 1 : 0;
             let coupon = Math.random() < 0.5 ? 1 : 0;
-            // リピート確率の計算ロジック（デザートが一番効く設定）
             let z = -2 + 0.001 * tanka + 2.0 * dessert + 0.5 * coupon;
             let prob = 1 / (1 + Math.exp(-z));
             let repeat = Math.random() < prob ? 1 : 0;
@@ -152,7 +162,6 @@
         renderPreviewTable();
     }
 
-    // テーブルにデータをプレビュー表示（3行だけ）
     function renderPreviewTable() {
         const table = document.getElementById('previewTable');
         let html = `<tr>${currentColumns.map(col => `<th>${col}</th>`).join('')}</tr>`;
@@ -162,7 +171,6 @@
         table.innerHTML = html;
     }
 
-    // ラジオボタンの切り替えイベント
     document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             document.getElementById('resultArea').style.display = 'none';
@@ -171,20 +179,17 @@
                 generateSampleData();
             } else {
                 document.getElementById('uploadArea').style.display = 'block';
-                document.getElementById('previewTable').innerHTML = ''; // 表をクリア
+                document.getElementById('previewTable').innerHTML = '';
                 currentColumns = []; currentData = [];
             }
         });
     });
 
-    // CSVファイルの読み込み処理 (PapaParse)
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
         Papa.parse(file, {
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
+            header: true, dynamicTyping: true, skipEmptyLines: true,
             complete: function(results) {
                 if(results.data.length === 0) return alert("データが空です");
                 currentColumns = Object.keys(results.data[0]);
@@ -194,22 +199,13 @@
         });
     });
 
-    // 初期起動時にサンプルデータを生成
     generateSampleData();
 
-
-    // --- 🧠 2. AIエンジン（JSで自作したロジスティック回帰） ---
-    // PythonがなくてもJSで一瞬で計算できる魔法の関数です。
-    
     function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
 
     function runLogisticRegression(X, y) {
-        const m = X.length;    // データ件数
-        const n = X[0].length; // 要素（変数）の数
-        
-        // ① データの標準化（大きすぎる数字を揃えて計算しやすくする）
-        const means = Array(n).fill(0);
-        const stds = Array(n).fill(0);
+        const m = X.length; const n = X[0].length;
+        const means = Array(n).fill(0); const stds = Array(n).fill(0);
         for(let j=0; j<n; j++) {
             let sum = 0; for(let i=0; i<m; i++) sum += X[i][j];
             means[j] = sum / m;
@@ -218,10 +214,8 @@
         }
         const X_scaled = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
         
-        // ② 勾配降下法（AIの学習プロセス）
-        let weights = Array(n).fill(0);
-        let bias = 0;
-        const epochs = 1000; const lr = 0.5; // 学習回数と学習率
+        let weights = Array(n).fill(0); let bias = 0;
+        const epochs = 1000; const lr = 0.5;
         
         for(let epoch=0; epoch<epochs; epoch++) {
             let dw = Array(n).fill(0); let db = 0;
@@ -236,11 +230,9 @@
             bias -= (lr * db) / m;
         }
         
-        // ③ 学習結果を元の数字のスケールに戻す
         let originalWeights = Array(n).fill(0);
         for(let j=0; j<n; j++) originalWeights[j] = weights[j] / stds[j];
         
-        // ④ 正解率（Accuracy）の計算
         let correct = 0;
         for(let i=0; i<m; i++) {
             let z = bias;
@@ -251,68 +243,55 @@
         return { weights: originalWeights, accuracy: correct / m };
     }
 
-
-    // --- 📊 3. 分析ボタンが押された時の処理 ---
-
     document.getElementById('analyzeBtn').addEventListener('click', () => {
         if (currentData.length === 0) return alert("データがありません！CSVを入れるかサンプルを選んでください。");
 
-        // ローディング演出（AIが考えてる感 を出すためにあえて0.8秒待たせる）
         document.getElementById('analyzeBtn').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
 
         setTimeout(() => {
-            // 分析データの準備（一番右の列が「結果(y)」、それ以外が「要素(X)」）
             const X = currentData.map(row => row.slice(0, -1));
             const y = currentData.map(row => row[row.length - 1]);
             const featureNames = currentColumns.slice(0, -1);
 
-            // 自作のAIエンジン実行！
             const result = runLogisticRegression(X, y);
             modelAccuracy = result.accuracy;
 
-            // 結果を整理（オッズ比などを計算）
             let importanceData = featureNames.map((name, i) => {
                 let coef = result.weights[i];
-                return {
-                    name: name,
-                    coef: coef,
-                    oddsRatio: Math.exp(coef) // オッズ比（何倍リピートしやすくなるか）
-                };
+                return { name: name, coef: coef, oddsRatio: Math.exp(coef) };
             });
 
-            // 影響力（回帰係数の絶対値）が大きい順に並び替え
             importanceData.sort((a, b) => Math.abs(b.coef) - Math.abs(a.coef));
-            
             topFactorName = importanceData[0].name;
 
-            // 画面の更新
-            document.getElementById('conclusion').innerHTML = `🎉 分析完了！お店のファンを増やす一番の鍵は ズバリ <strong>『${topFactorName}』</strong> でした！`;
+            // 💡 文脈が繋がるようにメッセージを修正！
+            document.getElementById('conclusion').innerHTML = `
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🎉 分析完了！</div>
+                今回「1. データの準備」でご用意いただいたデータをAIが比較した結果……<br><br>
+                お店のファンを増やす一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！
+            `;
             
-            // グラフの描画 (Chart.js)
             drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef));
 
-            // エビデンス表の生成
             document.getElementById('accuracyText').innerHTML = `<strong>■ モデルの予測正解率 (Accuracy):</strong> ${(modelAccuracy * 100).toFixed(1)}%`;
             let tableHtml = `<tr><th>分析要素</th><th>影響スコア(回帰係数)</th><th>リピート倍率(オッズ比)</th></tr>`;
             importanceData.forEach(d => {
-                tableHtml += `<tr><td>${d.name}</td><td>${d.coef.toFixed(4)}</td><td>${d.oddsRatio.toFixed(2)}倍</td></tr>`;
+                tableHtml += `<tr><td>${d.name}</td><td>${d.coef.toFixed(4)}</td><td><strong>${d.oddsRatio.toFixed(2)}倍</strong></td></tr>`;
             });
             document.getElementById('evidenceTable').innerHTML = tableHtml;
 
-            // 演出終了、結果表示
             document.getElementById('loading').style.display = 'none';
             document.getElementById('analyzeBtn').style.display = 'block';
             document.getElementById('resultArea').style.display = 'block';
 
-        }, 800); // 0.8秒後に結果が出る
+        }, 800);
     });
 
-    // グラフ描画関数
     function drawChart(labels, data) {
         const ctx = document.getElementById('myChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy(); // 古いグラフを消す
+        if (chartInstance) chartInstance.destroy();
         
         chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -326,33 +305,20 @@
                     borderWidth: 1
                 }]
             },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } }
-            }
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
     }
 
-    // --- 🔒 4. マネタイズ機能（パスコードとPDF/TXTダウンロード） ---
-    
     document.getElementById('downloadBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
-        
         if (code === "2026BASE") {
             alert("✅ 決済が確認できました！ありがとうございます💕\nレポートをダウンロードします。");
-            
             const acc = (modelAccuracy * 100).toFixed(1);
             const reportText = `【AIリピート診断 詳細レポート】\n\n■ 結論:\nあなたのお店で最もリピートに貢献している要素は「${topFactorName}」です。\n（AIの予測正解率: ${acc}%）\n\n■ 明日からのアクションプラン:\nこの要素を伸ばすためのキャンペーン（例：注文時のサービスなど）を企画し、お客様への声掛けを徹底してください。\n\n※この分析はお客様の端末上で安全に計算されました。データは外部に一切送信されていません。`;
-            
-            // JavaScriptだけでテキストファイルを生成してダウンロードさせる裏技
             const blob = new Blob([reportText], {type: "text/plain"});
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.href = url;
-            a.download = "AI_Report.txt";
-            a.click();
-            URL.revokeObjectURL(url);
-            
+            a.href = url; a.download = "AI_Report.txt"; a.click(); URL.revokeObjectURL(url);
         } else {
             alert("💦 パスコードが間違っているようです。もう一度確認してください。");
         }

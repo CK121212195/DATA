@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 常連さん発見AI 診断ルーム</title>
     
+    <!-- 必要なライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- 追加：文字化け(Shift-JIS等)を自動解決するライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
 
     <style>
+        /* --- 基本のスタイル --- */
         body {
             background-color: #FFF0F5; color: #4A4A4A;
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
@@ -38,6 +41,10 @@
             margin-top: 15px; box-sizing: border-box; text-align: center;
         }
         .btn:hover { background-color: #FF5C83; }
+        .btn-outline {
+            background-color: transparent; color: #4A90E2; border: 2px solid #4A90E2;
+        }
+        .btn-outline:hover { background-color: #f0f7ff; }
         
         .link-btn {
             display: inline-block; background-color: #4A90E2; color: white; text-decoration: none;
@@ -61,9 +68,7 @@
         #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
         #resultArea { display: none; }
         .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
-        #pdfContentArea { background: #fff; padding: 10px; }
-
-        /* ガチ統計家向けのUIスタイル */
+        
         .stat-section {
             background-color: #f4f6f8; border: 1px solid #dcdfe6; border-radius: 6px;
             padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 13px;
@@ -74,6 +79,31 @@
         .stat-table th { background-color: #e2e8f0; text-align: center; color: #333; font-weight: bold;}
         .stat-table td:first-child { text-align: left; font-weight: bold; }
         .equation { background: #fff; padding: 10px; border-left: 4px solid #4A90E2; margin-bottom: 15px; line-height: 1.8;}
+
+        /* --- 🖨️ 印刷＆PDF保存用の最強CSS（画面には見えないが印刷時に発動） --- */
+        @media print {
+            body { background-color: #FFFFFF; color: #000; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; }
+            /* 印刷時に隠す要素 */
+            h1, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, 
+            .explanation-box, hr, #step3, #authArea, #premiumActionArea {
+                display: none !important;
+            }
+            /* レポート部分を整える */
+            #resultArea { display: block !important; }
+            details { background: none; margin: 0; padding: 0; }
+            summary { display: none; } /* 折りたたみボタンを隠す */
+            details > * { display: block !important; } /* 折りたたまれていても強制表示 */
+            canvas { max-width: 100%; height: auto !important; }
+            .stat-section { border: 1px solid #999; background: #fff; }
+            
+            /* 印刷用のヘッダーを追加表示 */
+            #resultArea::before {
+                content: "【社外秘】リピート要因 AI分析レポート (発行日: " attr(data-date) ")";
+                display: block; font-size: 20px; font-weight: bold; color: #333;
+                border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -83,7 +113,7 @@
     <p>お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨<br>
     ※お客様のデータはサーバーに送信されず、この画面上で安全に処理されます。</p>
 
-    <h2>🌸 1. データの準備</h2>
+    <h2 id="step1">🌸 1. データの準備</h2>
     
     <div class="explanation-box">
         <p><strong>💡 ルールのおさらい</strong></p>
@@ -110,30 +140,41 @@
     <div id="loading">✨ AI（ロジスティック回帰モデル）がデータを学習しています...</div>
 
     <div id="resultArea">
-        <div id="pdfContentArea">
-            <h2 style="text-align:center; color:#FF7A9A; border:none; margin-top:0;">📋 リピート要因 AI分析レポート</h2>
-            <div id="conclusion" class="success-msg"></div>
-            
-            <p style="font-weight:bold; margin-top:20px;">▼ 要素ごとの影響力グラフ</p>
-            <canvas id="myChart"></canvas>
+        <div id="conclusion" class="success-msg"></div>
+        
+        <p style="font-weight:bold; margin-top:20px;">▼ 要素ごとの影響力グラフ</p>
+        <canvas id="myChart"></canvas>
 
-            <details open>
-                <summary>📊 専門家向け：計算根拠と詳細な統計情報（ガチ勢用）</summary>
-                <div class="explanation-box" style="margin-top: 15px;">
-                    <p>当分析はロジスティック回帰（Logistic Regression）を使用し、ブラウザ上でヘッセ行列を用いた最尤推定・分散共分散行列の算出を行っています。</p>
-                </div>
-                
-                <!-- ガチの統計表が入るエリア -->
-                <div class="stat-section" id="statDetails"></div>
-            </details>
-        </div>
+        <details id="statDetailsWrapper" open>
+            <summary>📊 専門家向け：計算根拠と詳細な統計情報（ガチ勢用）</summary>
+            <div class="explanation-box" style="margin-top: 15px;">
+                <p>当分析はロジスティック回帰（Logistic Regression）を使用し、ブラウザ上でヘッセ行列を用いた最尤推定・分散共分散行列の算出を行っています。</p>
+            </div>
+            <div class="stat-section" id="statDetails"></div>
+        </details>
 
         <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 30px 0;">
 
-        <h2>🎁 3. プロ仕様の詳細レポートを発行 (500円)</h2>
-        <a href="https://square.link/YOUR_DUMMY_LINK" target="_blank" class="link-btn">💳 Squareで決済してパスコードを入手する（500円）</a>
-        <input type="password" id="passcodeInput" placeholder="🔑 パスコードを入力">
-        <button class="btn" id="downloadBtn" style="background-color: #2E7D32;">📄 PDFレポートをダウンロード</button>
+        <h2 id="step3">🎁 3. プロ仕様の詳細レポートを発行 (500円)</h2>
+        
+        <!-- ▼ 未購入時の画面 ▼ -->
+        <div id="authArea">
+            <p>融資や社内会議に使える「PDF保存機能」と、LINE等で共有できる「テキストコピー機能」を解放します💌</p>
+            <a href="https://square.link/YOUR_DUMMY_LINK" target="_blank" class="link-btn">💳 Squareで決済してパスコードを入手する（500円）</a>
+            <input type="password" id="passcodeInput" placeholder="🔑 パスコードを入力">
+            <button class="btn" id="authBtn" style="background-color: #2E7D32;">🔓 パスコードで機能を解放する</button>
+        </div>
+
+        <!-- ▼ 購入後の画面（最初は非表示） ▼ -->
+        <div id="premiumActionArea" style="display: none;">
+            <div class="success-msg" style="background-color: #FFF3CD; color: #856404;">
+                <strong>✅ パスコード認証成功！</strong><br>
+                下のボタンから用途に合わせてレポートをご活用ください。
+            </div>
+            
+            <button class="btn" id="printBtn" style="background-color: #4A90E2; margin-bottom: 10px;">🖨️ このレポートを綺麗に印刷／PDFとして保存</button>
+            <button class="btn btn-outline" id="copyTextBtn">📋 スタッフ共有用にテキスト結果をコピー</button>
+        </div>
     </div>
 </div>
 
@@ -142,6 +183,11 @@
     let currentData = [];
     let chartInstance = null;
     let topFactorName = "";
+    let analysisResultData = null; // コピー機能用に保持
+
+    // 日付をセット（印刷プレビュー用）
+    const today = new Date();
+    document.getElementById('resultArea').setAttribute('data-date', `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`);
 
     function generateSampleData() {
         currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(1=はい)"];
@@ -151,7 +197,6 @@
             let time = Math.floor(Math.random() * 100) + 20;
             let dessert = Math.random() < 0.5 ? 1 : 0;
             let coupon = Math.random() < 0.5 ? 1 : 0;
-            // 真のモデル
             let z = -2.5 + 0.001 * tanka + 2.2 * dessert + 0.6 * coupon;
             let prob = 1 / (1 + Math.exp(-z));
             let repeat = Math.random() < prob ? 1 : 0;
@@ -183,51 +228,66 @@
         });
     });
 
+    // 🌟 文字化け完全防御付きのCSV読み込み
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        Papa.parse(file, {
-            header: true, dynamicTyping: true, skipEmptyLines: true,
-            complete: function(results) {
-                if(results.data.length === 0) return alert("❌ データが空です！");
-                currentColumns = Object.keys(results.data[0]);
-                currentData = results.data.map(row => {
-                    return currentColumns.map(col => {
-                        let val = Number(row[col]);
-                        return isNaN(val) ? 0 : val;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            // 1. ファイルをバイナリとして読み込む
+            const uint8Array = new Uint8Array(event.target.result);
+            
+            // 2. 文字コードを自動判定（Shift-JISかUTF-8か）
+            const detected = Encoding.detect(uint8Array);
+            
+            // 3. AIが確実に読めるUnicode(UTF-8)に変換！
+            const unicodeString = Encoding.convert(uint8Array, {
+                to: 'UNICODE',
+                from: detected || 'AUTO',
+                type: 'string'
+            });
+
+            // 4. 変換済みの綺麗な文字列をPapaParseに渡す
+            Papa.parse(unicodeString, {
+                header: true, dynamicTyping: true, skipEmptyLines: true,
+                complete: function(results) {
+                    if(results.data.length === 0) return alert("❌ データが空です！");
+                    currentColumns = Object.keys(results.data[0]);
+                    currentData = results.data.map(row => {
+                        return currentColumns.map(col => {
+                            let val = Number(row[col]);
+                            return isNaN(val) ? 0 : val;
+                        });
                     });
-                });
-                renderPreviewTable();
-            }
-        });
+                    renderPreviewTable();
+                }
+            });
+        };
+        // バイナリとして読み込み開始
+        reader.readAsArrayBuffer(file);
     });
 
     generateSampleData();
 
-    // ▼▼▼ ガチ統計演算ロジック ▼▼▼
+    // ▼▼▼ ガチ統計演算ロジック (変更なし) ▼▼▼
     function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
-
-    // 標準正規分布の累積分布関数(p値計算用)
     function normalCDF(x) {
         let t = 1 / (1 + 0.2316419 * Math.abs(x));
         let d = 0.3989423 * Math.exp(-x * x / 2);
         let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
         return x > 0 ? 1 - p : p;
     }
-
-    // ガウス・ジョルダン法による逆行列計算（分散共分散行列用）
     function invertMatrix(M) {
         let n = M.length;
         let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
         let A = M.map(row => [...row]);
-        
         for (let i = 0; i < n; i++) {
             let maxEl = Math.abs(A[i][i]); let maxRow = i;
             for (let k = i + 1; k < n; k++) {
                 if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
             }
-            if (maxEl === 0) return null; // 完全分離等で計算不可
-            
+            if (maxEl === 0) return null;
             for (let k = 0; k < n; k++) {
                 [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]];
                 [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]];
@@ -237,10 +297,7 @@
             for (let j = 0; j < n; j++) {
                 if (i !== j) {
                     let factor = A[j][i];
-                    for (let k = 0; k < n; k++) {
-                        A[j][k] -= factor * A[i][k];
-                        I[j][k] -= factor * I[i][k];
-                    }
+                    for (let k = 0; k < n; k++) { A[j][k] -= factor * A[i][k]; I[j][k] -= factor * I[i][k]; }
                 }
             }
         }
@@ -250,8 +307,6 @@
     function runLogisticRegression(X, y) {
         const m = X.length; const n = X[0].length;
         const means = Array(n).fill(0); const stds = Array(n).fill(0);
-        
-        // 標準化 (収束安定のため)
         for(let j=0; j<n; j++) {
             let sum = 0; for(let i=0; i<m; i++) sum += X[i][j];
             means[j] = sum / m;
@@ -259,11 +314,8 @@
             stds[j] = Math.sqrt(sqSum / m) || 1;
         }
         const X_scaled = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
-        
         let weights = Array(n).fill(0); let bias = 0;
         const epochs = 2000; const lr = 0.5;
-        
-        // 勾配降下法
         for(let epoch=0; epoch<epochs; epoch++) {
             let dw = Array(n).fill(0); let db = 0;
             for(let i=0; i<m; i++) {
@@ -276,71 +328,49 @@
             for(let j=0; j<n; j++) weights[j] -= (lr * dw[j]) / m;
             bias -= (lr * db) / m;
         }
-        
-        // 元のスケールに変換
         let origWeights = Array(n).fill(0); let origBias = bias;
         for(let j=0; j<n; j++) {
             origWeights[j] = weights[j] / stds[j];
             origBias -= (weights[j] * means[j]) / stds[j];
         }
-        
-        // === 統計情報の算出 ===
-        let k_params = n + 1; 
-        let logLikelihood = 0; let p_hat = [];
-        let X_design = [];
-        
+        let k_params = n + 1; let logLikelihood = 0; let p_hat = []; let X_design = [];
         for(let i=0; i<m; i++) {
             X_design.push([1, ...X[i]]);
             let z = origBias;
             for(let j=0; j<n; j++) z += origWeights[j] * X[i][j];
-            let prob = Math.max(1e-15, Math.min(1 - 1e-15, sigmoid(z))); // 0割防止
+            let prob = Math.max(1e-15, Math.min(1 - 1e-15, sigmoid(z)));
             p_hat.push(prob);
             logLikelihood += y[i] * Math.log(prob) + (1 - y[i]) * Math.log(1 - prob);
         }
-        
         let y_mean = y.reduce((a, b) => a + b, 0) / m;
         let nullLogLikelihood = 0;
         for(let i=0; i<m; i++) nullLogLikelihood += y[i] * Math.log(y_mean) + (1 - y[i]) * Math.log(1 - y_mean);
-        
-        // ヘッセ行列 (H = X^T W X)
         let H = Array(k_params).fill(0).map(() => Array(k_params).fill(0));
         for(let i=0; i<m; i++) {
             let w = p_hat[i] * (1 - p_hat[i]);
             for(let row=0; row<k_params; row++) {
-                for(let col=0; col<k_params; col++) {
-                    H[row][col] += X_design[i][row] * X_design[i][col] * w;
-                }
+                for(let col=0; col<k_params; col++) { H[row][col] += X_design[i][row] * X_design[i][col] * w; }
             }
         }
-        
-        // 標準誤差、p値などの計算
         let covMatrix = invertMatrix(H);
-        let stdErrors = Array(k_params).fill(null);
-        let pValues = Array(k_params).fill(null);
-        let zValues = Array(k_params).fill(null);
-        let ci95 = Array(k_params).fill(null);
+        let stdErrors = Array(k_params).fill(null); let pValues = Array(k_params).fill(null);
+        let zValues = Array(k_params).fill(null); let ci95 = Array(k_params).fill(null);
         let allParams = [origBias, ...origWeights];
-        
         if (covMatrix) {
             for(let j=0; j<k_params; j++) {
-                let se = Math.sqrt(Math.max(0, covMatrix[j][j]));
-                stdErrors[j] = se;
-                let z = allParams[j] / (se || 1e-9);
-                zValues[j] = z;
+                let se = Math.sqrt(Math.max(0, covMatrix[j][j])); stdErrors[j] = se;
+                let z = allParams[j] / (se || 1e-9); zValues[j] = z;
                 pValues[j] = 2 * (1 - normalCDF(Math.abs(z)));
                 ci95[j] = { lower: allParams[j] - 1.96 * se, upper: allParams[j] + 1.96 * se };
             }
         }
-        
         let correct = 0;
         for(let i=0; i<m; i++) if ((p_hat[i] >= 0.5 ? 1 : 0) === y[i]) correct++;
-        
         return { 
             weights: origWeights, bias: origBias, accuracy: correct / m,
             stdErrors, zValues, pValues, ci95, logLikelihood,
-            aic: 2 * k_params - 2 * logLikelihood,
-            nullDeviance: -2 * nullLogLikelihood, residualDeviance: -2 * logLikelihood,
-            pseudoR2: 1 - (logLikelihood / nullLogLikelihood),
+            aic: 2 * k_params - 2 * logLikelihood, nullDeviance: -2 * nullLogLikelihood, 
+            residualDeviance: -2 * logLikelihood, pseudoR2: 1 - (logLikelihood / nullLogLikelihood),
             dfNull: m - 1, dfResid: m - k_params
         };
     }
@@ -370,11 +400,14 @@
             const res = runLogisticRegression(X, y);
 
             let importanceData = featureNames.map((name, i) => {
-                return { name: name, coef: res.weights[i] };
+                return { name: name, coef: res.weights[i], oddsRatio: Math.exp(res.weights[i]) };
             });
             importanceData.sort((a, b) => Math.abs(b.coef) - Math.abs(a.coef));
             let topPositive = importanceData.find(d => d.coef > 0);
             topFactorName = topPositive ? topPositive.name : importanceData[0].name;
+
+            // コピー用にデータを保持
+            analysisResultData = { topFactor: topFactorName, acc: (res.accuracy * 100).toFixed(1), items: importanceData };
 
             document.getElementById('conclusion').innerHTML = `
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🎉 AIによる診断が完了しました！</div>
@@ -383,7 +416,6 @@
             
             drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef));
 
-            // ▼▼▼ ガチ統計出力用のHTML生成 ▼▼▼
             let eqText = `logit(p) = ${res.bias.toFixed(4)} <br>`;
             featureNames.forEach((name, i) => {
                 let sign = res.weights[i] >= 0 ? "+" : "-";
@@ -402,14 +434,12 @@
                     <tbody>
             `;
             
-            // 切片
             statHtml += `<tr><td>(Intercept)</td><td>${res.bias.toFixed(4)}</td>
                 <td>${res.stdErrors[0] ? res.stdErrors[0].toFixed(4) : "NaN"}</td>
                 <td>${res.zValues[0] ? res.zValues[0].toFixed(4) : "NaN"}</td>
                 <td>${res.pValues[0] ? res.pValues[0].toFixed(4) : "NaN"} ${getSignificanceMark(res.pValues[0])}</td>
                 <td>-</td><td>-</td></tr>`;
 
-            // 各変数
             featureNames.forEach((name, i) => {
                 let j = i + 1;
                 let w = res.weights[i];
@@ -467,20 +497,51 @@
         });
     }
 
-    document.getElementById('downloadBtn').addEventListener('click', () => {
+    // 🔓 決済パスコード認証
+    document.getElementById('authBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
         if (code === "2026BASE") {
-            alert("✅ 決済が確認できました！PDFレポートをダウンロードします。");
-            const element = document.getElementById('pdfContentArea');
-            html2pdf().set({
-                margin: 10, filename: 'AI_Repeat_Report.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(element).save();
+            // パスコード正解でエリアを切り替え
+            document.getElementById('authArea').style.display = 'none';
+            document.getElementById('premiumActionArea').style.display = 'block';
+            
+            // 印刷時に詳細が見えるようにアコーディオンを開く
+            document.getElementById('statDetailsWrapper').open = true;
         } else {
-            alert("💦 パスコードが間違っています。");
+            alert("💦 パスコードが間違っています。Squareの決済完了画面をご確認ください。");
         }
+    });
+
+    // 🖨️ 印刷＆PDF保存（最強の代替機能）
+    document.getElementById('printBtn').addEventListener('click', () => {
+        // detailを確実に開いた状態で印刷ダイアログを呼ぶ
+        document.getElementById('statDetailsWrapper').open = true;
+        
+        // ちょっと待ってから印刷を呼ぶ（グラフの再描画などを待つため）
+        setTimeout(() => { window.print(); }, 300);
+    });
+
+    // 📋 テキストコピー機能（現場スタッフ共有用）
+    document.getElementById('copyTextBtn').addEventListener('click', () => {
+        if(!analysisResultData) return;
+        
+        let text = `【📊 店舗リピート要因 AI分析レポート】\n\n`;
+        text += `🎯 最もリピートに繋がる要素：\n「 ${analysisResultData.topFactor} 」\n\n`;
+        
+        text += `▼ 要素ごとのリピートしやすさ（オッズ比）\n`;
+        analysisResultData.items.forEach(d => {
+            let effect = d.oddsRatio >= 1.2 ? "💮効果大" : d.oddsRatio <= 0.8 ? "⚠️逆効果" : "➖普通";
+            text += `・${d.name}: ${d.oddsRatio.toFixed(2)}倍 (${effect})\n`;
+        });
+        
+        text += `\n🤖 AIの予測正解率: ${analysisResultData.acc}%\n`;
+        text += `※この分析はロジスティック回帰を用いて算出されました。`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("✅ コピーしました！\nLINEやSlackのグループにそのまま貼り付けて、スタッフへの共有にご活用ください。");
+        }).catch(err => {
+            alert("コピーに失敗しました。お使いのブラウザが対応していない可能性があります。");
+        });
     });
 </script>
 

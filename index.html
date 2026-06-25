@@ -42,9 +42,18 @@
         }
         .container {
             max-width: 800px; margin: 0 auto; background: #FFFFFF;
-            padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(255, 122, 154, 0.15);
+            padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(255, 122, 154, 0.15); position: relative;
         }
-        h1 { color: #FF7A9A; text-align: center; font-size: 26px; margin-bottom: 5px; }
+        
+        /* 言語切り替えボタン */
+        #langToggle {
+            position: absolute; top: 20px; right: 20px; cursor: pointer; background: #fff; padding: 6px 14px; 
+            border-radius: 20px; font-size: 13px; font-weight: bold; color: #E91E63; border: 2px solid #FFC0CB; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; user-select: none; z-index: 100;
+        }
+        #langToggle:hover { background: #FFF0F5; transform: translateY(-2px); }
+
+        h1 { color: #FF7A9A; text-align: center; font-size: 26px; margin-bottom: 5px; margin-top: 20px;}
         .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
         h2 { font-size: 19px; border-bottom: 2px solid #FFE4E1; padding-bottom: 8px; margin-top: 35px; color: #333;}
         
@@ -104,7 +113,7 @@
         @media print {
             body { background-color: #FFFFFF; color: #000; padding: 0; }
             .container { box-shadow: none; padding: 0; max-width: 100%; }
-            h1, .subtitle, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, .explanation-box, hr, #step3, .btn-group, #btcFooter { display: none !important; }
+            #langToggle, h1, .subtitle, .radio-group, #step1, #uploadArea, #dataPreviewArea, #analyzeBtn, .explanation-box, hr, #step3, .btn-group, #btcFooter { display: none !important; }
             #resultArea { display: block !important; }
             details { background: none; margin: 0; padding: 0; border: none; }
             summary { display: none; }
@@ -117,43 +126,45 @@
 <body>
 
 <div class="container">
-    <h1>🌷 お店のファン＆売上UP発見AIルーム</h1>
-    <p class="subtitle">過去のデータから、あなたのお店だけの「売れるヒント」を見つけます。<br>難しい計算はぜんぶAIに丸投げしてくださいね☕️</p>
+    <div id="langToggle">🌐 English</div>
+    
+    <h1 data-i18n="app_title">🌷 お店のファン＆売上UP発見AIルーム</h1>
+    <p class="subtitle" data-i18n="subtitle">過去のデータから、あなたのお店だけの「売れるヒント」を見つけます。<br>難しい計算はぜんぶAIに丸投げしてくださいね☕️</p>
 
-    <h2 id="step1">🌸 1. データの準備（AIへのお願い）</h2>
+    <h2 id="step1" data-i18n="step1_title">🌸 1. データの準備（AIへのお願い）</h2>
     <div class="explanation-box">
-        <strong class="title">💡 表の作り方ルール（とっても簡単です！）</strong>
-        <p>エクセルやスプレッドシートで、お客様のデータをまとめてください。<br>
+        <strong class="title" data-i18n="rules_title">💡 表の作り方ルール（とっても簡単です！）</strong>
+        <p data-i18n="rules_desc">エクセルやスプレッドシートで、お客様のデータをまとめてください。<br>
         <strong>一番大事なのは、「AIに予測してほしいゴール（目標の数字）」を、表の最後に置くこと</strong>です。</p>
         
         <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 280px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #FFE4E1;">
-                <strong style="color:#E91E63;">【パターンA】確率を知りたいとき</strong><br>
-                <span style="font-size:13px; color:#666;">（例：次も来る？ 商品を買う？ など）</span><br>
-                <span style="font-size:12px;">ゴールは必ず「1(はい)」「0(いいえ)」にします。</span>
+                <strong style="color:#E91E63;" data-i18n="patternA_title">【パターンA】確率を知りたいとき</strong><br>
+                <span style="font-size:13px; color:#666;" data-i18n="patternA_sub">（例：次も来る？ 商品を買う？ など）</span><br>
+                <span style="font-size:12px;" data-i18n="patternA_desc">ゴールは必ず「1(はい)」「0(いいえ)」にします。</span>
                 <table class="example-table">
-                    <tr><th>客単価</th><th>デザート</th><th class="goal">次も来たか？(ゴール)</th></tr>
-                    <tr><td>1,500円</td><td>1 (はい)</td><td class="goal">1 (はい)</td></tr>
-                    <tr><td>800円</td><td>0 (いいえ)</td><td class="goal">0 (いいえ)</td></tr>
+                    <tr><th data-i18n="exA_th1">客単価</th><th data-i18n="exA_th2">デザート</th><th class="goal" data-i18n="exA_th3">次も来たか？(ゴール)</th></tr>
+                    <tr><td data-i18n="exA_td1_1">1,500円</td><td data-i18n="exA_td1_2">1 (はい)</td><td class="goal" data-i18n="exA_td1_2">1 (はい)</td></tr>
+                    <tr><td data-i18n="exA_td2_1">800円</td><td data-i18n="exA_td2_2">0 (いいえ)</td><td class="goal" data-i18n="exA_td2_2">0 (いいえ)</td></tr>
                 </table>
             </div>
             <div style="flex: 1; min-width: 280px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #A9C9EE;">
-                <strong style="color:#4A90E2;">【パターンB】金額や回数を知りたいとき</strong><br>
-                <span style="font-size:13px; color:#666;">（例：売上はいくらになる？ 何回通う？ など）</span><br>
-                <span style="font-size:12px;">ゴールには実際の金額や回数を入れます。</span>
+                <strong style="color:#4A90E2;" data-i18n="patternB_title">【パターンB】金額や回数を知りたいとき</strong><br>
+                <span style="font-size:13px; color:#666;" data-i18n="patternB_sub">（例：売上はいくらになる？ 何回通う？ など）</span><br>
+                <span style="font-size:12px;" data-i18n="patternB_desc">ゴールには実際の金額や回数を入れます。</span>
                 <table class="example-table">
-                    <tr><th>滞在時間</th><th>トリートメント</th><th class="goal">最終売上(ゴール)</th></tr>
-                    <tr><td>90</td><td>1 (はい)</td><td class="goal">12,500円</td></tr>
-                    <tr><td>45</td><td>0 (いいえ)</td><td class="goal">4,000円</td></tr>
+                    <tr><th data-i18n="exB_th1">滞在時間</th><th data-i18n="exB_th2">トリートメント</th><th class="goal" data-i18n="exB_th3">最終売上(ゴール)</th></tr>
+                    <tr><td>90</td><td data-i18n="exA_td1_2">1 (はい)</td><td class="goal" data-i18n="exB_td1_1">12,500円</td></tr>
+                    <tr><td>45</td><td data-i18n="exA_td2_2">0 (いいえ)</td><td class="goal" data-i18n="exB_td2_1">4,000円</td></tr>
                 </table>
             </div>
         </div>
     </div>
 
     <div class="radio-group">
-        <label><input type="radio" name="dataSource" value="sample_logistic" checked> ✨ 架空のカフェのデータで試す（パターンA: 確率予測）</label>
-        <label><input type="radio" name="dataSource" value="sample_linear"> ✨ 架空の美容室のデータで試す（パターンB: 金額予測）</label>
-        <label><input type="radio" name="dataSource" value="csv"> 📁 自分のデータ(CSV)をアップロードする</label>
+        <label><input type="radio" name="dataSource" value="sample_logistic" checked> <span data-i18n="radio_sample_log">✨ 架空のカフェのデータで試す（パターンA: 確率予測）</span></label>
+        <label><input type="radio" name="dataSource" value="sample_linear"> <span data-i18n="radio_sample_lin">✨ 架空の美容室のデータで試す（パターンB: 金額予測）</span></label>
+        <label><input type="radio" name="dataSource" value="csv"> <span data-i18n="radio_csv">📁 自分のデータ(CSV)をアップロードする</span></label>
     </div>
 
     <div id="uploadArea" style="display: none;">
@@ -167,24 +178,24 @@
         </div>
     </div>
 
-    <h2>🪄 2. AI無料診断スタート</h2>
-    <button class="btn" id="analyzeBtn">🔮 ワンタップでAI分析をスタート！</button>
-    <div id="loading">✨ AIがお店のデータを読み解き、ヒントを探しています...☕️</div>
+    <h2 data-i18n="step2_title">🪄 2. AI無料診断スタート</h2>
+    <button class="btn" id="analyzeBtn" data-i18n="btn_analyze">🔮 ワンタップでAI分析をスタート！</button>
+    <div id="loading" data-i18n="loading_text">✨ AIがお店のデータを読み解き、ヒントを探しています...☕️</div>
 
     <div id="resultArea">
         <div id="conclusion" class="success-msg"></div>
         
         <div id="aiAdviceArea" class="ai-advice-box"></div>
 
-        <p style="font-weight:bold; margin-top:25px; font-size:18px; color:#333;">▼ あなたのお店の「影響力」グラフ</p>
+        <p style="font-weight:bold; margin-top:25px; font-size:18px; color:#333;" data-i18n="chart_title">▼ あなたのお店の「影響力」グラフ</p>
         <canvas id="myChart"></canvas>
 
         <div id="chartExplanation" class="explanation-box explanation-blue" style="margin-top: 15px;"></div>
 
         <details id="statDetailsWrapper">
-            <summary>📊 専門家向け：計算根拠（回帰分析グラフ・統計データ）</summary>
+            <summary data-i18n="details_summary">📊 専門家向け：計算根拠（回帰分析グラフ・統計データ）</summary>
             
-            <p style="font-weight:bold; margin-top:15px; font-size:15px; color:#333; text-align:center;">▼ AI予測の精度グラフ（AIの予測値 vs 実際のデータ）</p>
+            <p style="font-weight:bold; margin-top:15px; font-size:15px; color:#333; text-align:center;" data-i18n="reg_chart_title">▼ AI予測の精度グラフ（AIの予測値 vs 実際のデータ）</p>
             <div style="max-width: 600px; margin: 0 auto;">
                 <canvas id="regressionChart"></canvas>
             </div>
@@ -194,22 +205,189 @@
 
         <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 35px 0;">
 
-        <h2 id="step3">🎁 3. 分析結果を保存・シェアする</h2>
-        <p>融資の提出や、スタッフ会議にそのまま使える機能です。お店の宣伝にもお使いください！</p>
+        <h2 id="step3" data-i18n="step3_title">🎁 3. 分析結果を保存・シェアする</h2>
+        <p data-i18n="step3_desc">融資の提出や、スタッフ会議にそのまま使える機能です。お店の宣伝にもお使いください！</p>
         
         <div class="btn-group">
-            <button class="btn" id="printBtn" style="background-color: #4A90E2;">🖨️ PDFとして保存 / 印刷</button>
-            <button class="btn btn-twitter" id="twitterShareBtn">🐦 X (Twitter) でシェアする</button>
+            <button class="btn" id="printBtn" style="background-color: #4A90E2;" data-i18n="btn_print">🖨️ PDFとして保存 / 印刷</button>
+            <button class="btn btn-twitter" id="twitterShareBtn" data-i18n="btn_twitter">🐦 X (Twitter) でシェアする</button>
         </div>
     </div>
 </div>
 
 <!-- 隠しBitcoin寄付リンク -->
 <div id="btcFooter" style="text-align:center; margin-top: 40px; margin-bottom: 20px; font-size: 11px; color: #ccc;">
-    開発者を応援する☕️ Lightning Network: <span id="btcAddress" style="cursor:pointer; text-decoration:underline;">brashridge65@walletofsatoshi.com</span>
+    <span data-i18n="footer_text">開発者を応援する☕️ Lightning Network:</span> <span id="btcAddress" style="cursor:pointer; text-decoration:underline;">brashridge65@walletofsatoshi.com</span>
 </div>
 
 <script>
+    // ▼▼ 多言語対応 (i18n) 辞書 ▼▼
+    const i18n = {
+        ja: {
+            app_title: "🌷 お店のファン＆売上UP発見AIルーム",
+            subtitle: "過去のデータから、あなたのお店だけの「売れるヒント」を見つけます。<br>難しい計算はぜんぶAIに丸投げしてくださいね☕️",
+            step1_title: "🌸 1. データの準備（AIへのお願い）",
+            rules_title: "💡 表の作り方ルール（とっても簡単です！）",
+            rules_desc: "エクセルやスプレッドシートで、お客様のデータをまとめてください。<br><strong>一番大事なのは、「AIに予測してほしいゴール（目標の数字）」を、表の最後に置くこと</strong>です。",
+            patternA_title: "【パターンA】確率を知りたいとき",
+            patternA_sub: "（例：次も来る？ 商品を買う？ など）",
+            patternA_desc: "ゴールは必ず「1(はい)」「0(いいえ)」にします。",
+            exA_th1: "客単価", exA_th2: "デザート", exA_th3: "次も来たか？(ゴール)",
+            exA_td1_1: "1,500円", exA_td1_2: "1 (はい)",
+            exA_td2_1: "800円", exA_td2_2: "0 (いいえ)",
+            patternB_title: "【パターンB】金額や回数を知りたいとき",
+            patternB_sub: "（例：売上はいくらになる？ 何回通う？ など）",
+            patternB_desc: "ゴールには実際の金額や回数を入れます。",
+            exB_th1: "滞在時間", exB_th2: "トリートメント", exB_th3: "最終売上(ゴール)",
+            exB_td1_1: "12,500円", exB_td2_1: "4,000円",
+            radio_sample_log: "✨ 架空のカフェのデータで試す（パターンA: 確率予測）",
+            radio_sample_lin: "✨ 架空の美容室のデータで試す（パターンB: 金額予測）",
+            radio_csv: "📁 自分のデータ(CSV)をアップロードする",
+            step2_title: "🪄 2. AI無料診断スタート",
+            btn_analyze: "🔮 ワンタップでAI分析をスタート！",
+            loading_text: "✨ AIがお店のデータを読み解き、ヒントを探しています...☕️",
+            chart_title: "▼ あなたのお店の「影響力」グラフ",
+            details_summary: "📊 専門家向け：計算根拠（回帰分析グラフ・統計データ）",
+            reg_chart_title: "▼ AI予測の精度グラフ（AIの予測値 vs 実際のデータ）",
+            step3_title: "🎁 3. 分析結果を保存・シェアする",
+            step3_desc: "融資の提出や、スタッフ会議にそのまま使える機能です。お店の宣伝にもお使いください！",
+            btn_print: "🖨️ PDFとして保存 / 印刷",
+            btn_twitter: "🐦 X (Twitter) でシェアする",
+            footer_text: "開発者を応援する☕️ Lightning Network:",
+            
+            // 動的生成テキスト
+            col_spend: "客単価(円)", col_time: "滞在時間(分)", col_dessert: "デザート注文(1=あり)", col_coupon: "クーポン利用(1=あり)", col_goal_return: "次回来店したか(ゴール)",
+            col_reserve: "指名予約(1=あり)", col_treatment: "トリートメント(1=あり)", col_exp: "スタッフ歴(年)", col_goal_sales: "最終売上金額(ゴール)",
+            
+            alert_log_title: "AIの確認完了：【確率予測モード】で分析します",
+            alert_log_desc: "AIは、最後の列「{target}」が起きる確率（YES/NO）を分析する準備ができました！",
+            alert_lin_title: "AIの確認完了：【数値・金額予測モード】で分析します",
+            alert_lin_desc: "AIは、最後の列「{target}」の金額や回数を増やすヒントを分析する準備ができました！",
+            
+            ind_general: "店舗ビジネス全般",
+            adv_general: "素晴らしいデータです！お店の成長の鍵は「{top}」にあるとAIが判定しました。<br>次回は『来店した曜日（週末=1）』や『クーポンの種類』をデータに足してみましょう。お客様の解像度がグッと上がり、新たな発見に繋がります！",
+            ind_cafe: "🍽️ 飲食店・カフェ",
+            adv_cafe: "【AIからの提案】今回最も影響力が高かった「{top}」を、初回LINE登録の「無料プレゼント」に設定するのが王道の戦略です！<br>次回は『雨の日の来店か？(1=はい)』や『同伴者の有無(1=あり)』をデータに足すと、より精度の高いプロモーションが打てます。",
+            ind_salon: "✂️ 美容室・サロン",
+            adv_salon: "【AIからの提案】影響力が高かった「{top}」を「初回お試し価格」で提供し、体験してもらう機会を増やしましょう。<br>次回は『店販商品（シャンプー等）の購入有無(1=あり)』をデータに足すと、LTV（生涯顧客価値）の分析が深まります！",
+            ind_school: "🏫 スクール・教育系",
+            adv_school: "【AIからの提案】「{top}」が目標達成の最大のフックになっています。これを前面に押し出したアプローチをしましょう！",
+            
+            err_msg: "💦 【AIからのお願い】\n計算の途中でエラーが発生しました。\n\n・「全員が同じ数字」になっている列\n・「名前」など全員がバラバラすぎる列\n・項目同士が似すぎている列\n\nこれらがあるとAIが混乱してしまいます。\n不要な列を削除して、もう一度お試しください！",
+            diag_complete: "🎉 診断が完了しました！",
+            diag_msg: "「{target}」を引き上げる最大の鍵は、ズバリ <span class='marker'>『{top}』</span> でした！<br>この要素を少し工夫するだけで、数字がグッと良くなる可能性が高いです✨",
+            
+            exp_log_title: "💡 グラフの見方（リピート倍率 / オッズ比とは？）",
+            exp_log_desc: "右に棒が伸びているほど、目標（{target}）に繋がりやすい「良い行動」です。<br><strong>【オッズ比の例】</strong>もし『デザート』のオッズ比が <strong>2.5倍</strong> なら、デザートを頼んだお客様は、頼まなかったお客様に比べて <strong>2.5倍も次回リピートしやすい</strong>、という意味になります！（1.0なら影響なし、1未満なら逆効果です）<br>※棒をタップすると、それぞれの項目の倍率が見れます。",
+            exp_lin_title_amt: "💡 グラフの見方（売上アップ額）",
+            exp_lin_title_cnt: "💡 グラフの見方（アップ数）",
+            exp_lin_desc: "右に棒が伸びているほど、目標の数字（{target}）を大きく引き上げてくれる「優秀な要素」です。<br>棒をタップすると、<strong>「その要素を1増やしたら、結果がどれくらい増えるか」</strong>が見れます！",
+            
+            tooltip_odds: "✨ リピート倍率: {val} 倍", tooltip_lin: "✨ 1増えると結果が +{val}{unit}！", unit_yen: " 円",
+            
+            lbl_actual: "実際のお客様データ", lbl_pred_log: "AI予測確率 (シグモイド曲線)", lbl_pred_lin: "理想の予測線 (予測と実際が一致)",
+            axis_x_log: "AIの総合スコア (全変数の合算)", axis_y_log: "確率 (ゴール)", axis_x_lin: "AIの予測数値", axis_y_lin: "実際の数値 (ゴール)",
+            
+            stat_eq: "[AIが導き出した方程式（回帰モデル）]", stat_var: "変数", stat_est: "推定値 (β)", stat_se: "標準誤差 (SE)", stat_p: "p値", stat_or: "オッズ比",
+            stat_acc: "モデルの予測正解率 (Accuracy): {val}%", stat_r2: "モデルの当てはまり度 (決定係数 R²): {val}",
+            alert_no_data: "データがありません！", chart_label_log: "お店の売上・ファン化への貢献度", ai_advice_title: "🤖 AIからの提案 ({ind}向け)"
+        },
+        en: {
+            app_title: "🌷 Shop Fan & Sales Boost AI Room",
+            subtitle: "Find your shop's unique 'sales hints' from past data.<br>Leave all the complex calculations to the AI ☕️",
+            step1_title: "🌸 1. Data Preparation",
+            rules_title: "💡 Rules for creating the table (Super easy!)",
+            rules_desc: "Summarize customer data in Excel or a spreadsheet.<br><strong>The most important thing is to place the 'goal (target number)' you want the AI to predict at the end of the table.</strong>",
+            patternA_title: "[Pattern A] Probability Prediction",
+            patternA_sub: "(e.g., Return visit? Purchase item?)",
+            patternA_desc: "The goal must be '1 (Yes)' or '0 (No)'.",
+            exA_th1: "Spend", exA_th2: "Dessert", exA_th3: "Returned? (Goal)",
+            exA_td1_1: "1,500 yen", exA_td1_2: "1 (Yes)",
+            exA_td2_1: "800 yen", exA_td2_2: "0 (No)",
+            patternB_title: "[Pattern B] Amount / Count Prediction",
+            patternB_sub: "(e.g., Sales amount? Number of visits?)",
+            patternB_desc: "Enter actual amounts or counts in the goal.",
+            exB_th1: "Stay Time", exB_th2: "Treatment", exB_th3: "Final Sales (Goal)",
+            exB_td1_1: "12,500 yen", exB_td2_1: "4,000 yen",
+            radio_sample_log: "✨ Try with imaginary cafe data (Pattern A: Probability)",
+            radio_sample_lin: "✨ Try with imaginary salon data (Pattern B: Amount)",
+            radio_csv: "📁 Upload your own data (CSV)",
+            step2_title: "🪄 2. Start AI Free Diagnosis",
+            btn_analyze: "🔮 Start AI Analysis with One Tap!",
+            loading_text: "✨ AI is analyzing shop data and looking for hints...☕️",
+            chart_title: "▼ Your shop's 'Impact' graph",
+            details_summary: "📊 For Experts: Calculation Basis (Regression / Stats)",
+            reg_chart_title: "▼ AI Prediction Accuracy Graph (Predicted vs Actual)",
+            step3_title: "🎁 3. Save & Share Analysis Results",
+            step3_desc: "Can be used directly for loan applications or staff meetings. Use it to promote your shop!",
+            btn_print: "🖨️ Save as PDF / Print",
+            btn_twitter: "🐦 Share on X (Twitter)",
+            footer_text: "Support the developer ☕️ Lightning Network:",
+            
+            // 動的生成テキスト
+            col_spend: "Spend(yen)", col_time: "Stay Time(min)", col_dessert: "Dessert(1=Yes)", col_coupon: "Coupon(1=Yes)", col_goal_return: "Returned?(Goal)",
+            col_reserve: "Nomination(1=Yes)", col_treatment: "Treatment(1=Yes)", col_exp: "Staff Exp(yrs)", col_goal_sales: "Final Sales(Goal)",
+            
+            alert_log_title: "AI Check Complete: Analyzing in [Probability Mode]",
+            alert_log_desc: "AI is ready to analyze the probability (YES/NO) of the last column '{target}'!",
+            alert_lin_title: "AI Check Complete: Analyzing in [Value/Amount Mode]",
+            alert_lin_desc: "AI is ready to analyze hints to increase the value of the last column '{target}'!",
+            
+            ind_general: "General Retail",
+            adv_general: "Great data! AI determined the key to growth is '{top}'.<br>Next time, try adding 'Day of visit (Weekend=1)' or 'Coupon type'. It will lead to new discoveries!",
+            ind_cafe: "🍽️ Cafe & Restaurant",
+            adv_cafe: "[AI Suggestion] The royal strategy is to offer '{top}' as a free gift for new LINE registrations!<br>Next, adding 'Rainy day?' or 'Accompanied?' will enable sharper promotions.",
+            ind_salon: "✂️ Hair Salon & Spa",
+            adv_salon: "[AI Suggestion] Offer '{top}' at an introductory price to increase trial opportunities.<br>Next, adding 'Purchased retail items?' will deepen LTV analysis!",
+            ind_school: "🏫 School & Education",
+            adv_school: "[AI Suggestion] '{top}' is the biggest hook for achieving goals. Emphasize this in your approach!",
+            
+            err_msg: "💦 [Request from AI]\nAn error occurred during calculation.\n\n- Columns where 'everyone has the same number'\n- Columns with too many unique text (like Names)\n- Columns that are too similar to each other\n\nPlease remove unnecessary columns and try again!",
+            diag_complete: "🎉 Diagnosis Complete!",
+            diag_msg: "The biggest key to boosting '{target}' is <span class='marker'>'{top}'</span>!<br>Slightly tweaking this element can highly likely improve your numbers ✨",
+            
+            exp_log_title: "💡 How to read the graph (Repeat Multiplier / Odds Ratio)",
+            exp_log_desc: "The further the bar extends right, the better the action leading to '{target}'.<br><strong>[Example]</strong> If the Odds Ratio for 'Dessert' is <strong>2.5x</strong>, it means customers who ordered dessert are <strong>2.5 times more likely to return</strong>! (1.0 = no impact, <1 = negative impact)<br>*Tap the bars to see each multiplier.",
+            exp_lin_title_amt: "💡 How to read the graph (Sales Increase Amount)",
+            exp_lin_title_cnt: "💡 How to read the graph (Count Increase)",
+            exp_lin_desc: "The further the bar extends right, the more excellent the element is in boosting '{target}'.<br>Tap the bars to see <strong>'How much the result increases if this element is increased by 1'</strong>!",
+            
+            tooltip_odds: "✨ Repeat Multiplier: {val}x", tooltip_lin: "✨ +1 increases result by +{val}{unit}!", unit_yen: " yen",
+            
+            lbl_actual: "Actual Customer Data", lbl_pred_log: "AI Predicted Probability (Sigmoid)", lbl_pred_lin: "Ideal Prediction Line",
+            axis_x_log: "AI Total Score (Sum of all variables)", axis_y_log: "Probability (Goal)", axis_x_lin: "AI Predicted Value", axis_y_lin: "Actual Value (Goal)",
+            
+            stat_eq: "[Equation derived by AI (Regression Model)]", stat_var: "Variable", stat_est: "Estimate (β)", stat_se: "Std Error (SE)", stat_p: "p-value", stat_or: "Odds Ratio",
+            stat_acc: "Model Prediction Accuracy: {val}%", stat_r2: "Model Goodness of Fit (R²): {val}",
+            alert_no_data: "No data available!", chart_label_log: "Contribution to Shop Sales / Fans", ai_advice_title: "🤖 AI Suggestion (For {ind})"
+        }
+    };
+
+    let currentLang = 'ja';
+    function t(key) { return i18n[currentLang][key] || key; }
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+        currentLang = currentLang === 'ja' ? 'en' : 'ja';
+        document.getElementById('langToggle').innerText = currentLang === 'ja' ? '🌐 English' : '🌐 日本語';
+        
+        document.title = t('app_title');
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            el.innerHTML = t(el.getAttribute('data-i18n'));
+        });
+
+        // 既に分析結果が出ている場合は、翻訳を反映させるために再分析を走らせる
+        if(document.getElementById('resultArea').style.display === 'block') {
+            document.getElementById('analyzeBtn').click();
+        } else {
+            // 分析前ならサンプルデータを再生成（カラム名を翻訳するため）
+            let radio = document.querySelector('input[name="dataSource"]:checked').value;
+            if(radio === 'sample_logistic') generateSampleLogistic();
+            else if(radio === 'sample_linear') generateSampleLinear();
+            else if(currentData.length > 0) processDataPreview(); // CSVアップロード済みの場合はプレビューのみ更新
+        }
+    });
+
+    // ▼▼ 以下、メインの処理プログラム ▼▼
     let currentColumns = []; let currentData = []; let chartInstance = null; let regChartInstance = null;
     let analysisResultData = null; let currentAnalysisType = "logistic"; 
     
@@ -220,7 +398,7 @@
     }
 
     function generateSampleLogistic() {
-        currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(ゴール)"];
+        currentColumns = [t("col_spend"), t("col_time"), t("col_dessert"), t("col_coupon"), t("col_goal_return")];
         currentData = [];
         for (let i = 0; i < 150; i++) {
             let tanka = Math.floor(Math.random() * 2200) + 800; let time = Math.floor(Math.random() * 100) + 20;
@@ -232,7 +410,7 @@
     }
 
     function generateSampleLinear() {
-        currentColumns = ["滞在時間(分)", "指名予約(1=あり)", "トリートメント(1=あり)", "スタッフ歴(年)", "最終売上金額(ゴール)"];
+        currentColumns = [t("col_time"), t("col_reserve"), t("col_treatment"), t("col_exp"), t("col_goal_sales")];
         currentData = [];
         for (let i = 0; i < 150; i++) {
             let time = Math.floor(Math.random() * 90) + 30; let shimei = Math.random() < 0.4 ? 1 : 0;
@@ -252,14 +430,14 @@
         if (uniqueY.length <= 2) {
             currentAnalysisType = "logistic";
             document.getElementById('aiModeAlert').innerHTML = `
-                <div class="mode-badge mode-logistic">✨ AIの確認完了：【確率予測モード】で分析します</div>
-                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">AIは、最後の列「${targetName}」が起きる確率（YES/NO）を分析する準備ができました！</p>
+                <div class="mode-badge mode-logistic">✨ ${t('alert_log_title')}</div>
+                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">${t('alert_log_desc').replace('{target}', targetName)}</p>
             `;
         } else {
             currentAnalysisType = "linear";
             document.getElementById('aiModeAlert').innerHTML = `
-                <div class="mode-badge mode-linear">✨ AIの確認完了：【数値・金額予測モード】で分析します</div>
-                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">AIは、最後の列「${targetName}」の金額や回数を増やすヒントを分析する準備ができました！</p>
+                <div class="mode-badge mode-linear">✨ ${t('alert_lin_title')}</div>
+                <p style="font-size:13px; margin:0 0 10px 5px; color:#666;">${t('alert_lin_desc').replace('{target}', targetName)}</p>
             `;
         }
         renderPreviewTable();
@@ -295,16 +473,13 @@
             Papa.parse(str, {
                 header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(res) {
-                    if(res.data.length === 0) return alert("データが空です");
+                    if(res.data.length === 0) return alert(t('alert_no_data'));
                     currentColumns = Object.keys(res.data[0]);
 
-                    // ▼▼ AIが文字列（男性/女性、名前など）を自動で数字に変換する神機能 ▼▼
                     let encoders = {};
                     currentColumns.forEach(col => {
-                        // その列に文字が含まれているかチェック
                         let isText = res.data.some(row => typeof row[col] === 'string' && isNaN(Number(row[col])));
                         if(isText) {
-                            // 文字列だった場合、自動で 0, 1, 2... と番号を割り当てる
                             let unique = [...new Set(res.data.map(r => r[col]))];
                             encoders[col] = {};
                             unique.forEach((val, idx) => encoders[col][val] = idx);
@@ -313,7 +488,7 @@
 
                     currentData = res.data.map(row => {
                         return currentColumns.map(col => {
-                            if(encoders[col] !== undefined) return encoders[col][row[col]]; // 変換した数字を入れる
+                            if(encoders[col] !== undefined) return encoders[col][row[col]]; 
                             return Number(row[col]) || 0;
                         });
                     });
@@ -329,18 +504,18 @@
 
     function generateAiAdvice(features, targetName, topFactor) {
         let text = features.join(" ");
-        let industry = "店舗ビジネス全般";
-        let advice = `素晴らしいデータです！お店の成長の鍵は「${topFactor}」にあるとAIが判定しました。<br>次回は『来店した曜日（週末=1）』や『クーポンの種類』をデータに足してみましょう。お客様の解像度がグッと上がり、新たな発見に繋がります！`;
+        let industry = t('ind_general');
+        let advice = t('adv_general').replace('{top}', topFactor);
         
-        if (text.includes("デザート") || text.includes("飲") || text.includes("注文") || text.includes("メニュー")) {
-            industry = "🍽️ 飲食店・カフェ";
-            advice = `【AIからの提案】今回最も影響力が高かった「${topFactor}」を、初回LINE登録の「無料プレゼント」に設定するのが王道の戦略です！<br>次回は『雨の日の来店か？(1=はい)』や『同伴者の有無(1=あり)』をデータに足すと、より精度の高いプロモーションが打てます。`;
-        } else if (text.includes("指名") || text.includes("カラー") || text.includes("カット") || text.includes("トリートメント") || text.includes("スタッフ")) {
-            industry = "✂️ 美容室・サロン";
-            advice = `【AIからの提案】影響力が高かった「${topFactor}」を「初回お試し価格」で提供し、体験してもらう機会を増やしましょう。<br>次回は『店販商品（シャンプー等）の購入有無(1=あり)』をデータに足すと、LTV（生涯顧客価値）の分析が深まります！`;
+        if (text.includes("デザート") || text.includes("飲") || text.includes("注文") || text.includes("メニュー") || text.includes("Dessert") || text.includes("Spend")) {
+            industry = t('ind_cafe');
+            advice = t('adv_cafe').replace('{top}', topFactor);
+        } else if (text.includes("指名") || text.includes("カラー") || text.includes("カット") || text.includes("トリートメント") || text.includes("スタッフ") || text.includes("Treatment")) {
+            industry = t('ind_salon');
+            advice = t('adv_salon').replace('{top}', topFactor);
         } else if (text.includes("体験") || text.includes("入会") || text.includes("レッスン") || text.includes("国語") || text.includes("算数")) {
-            industry = "🏫 スクール・教育系";
-            advice = `【AIからの提案】「${topFactor}」が目標達成の最大のフックになっています。これを前面に押し出したアプローチをしましょう！`;
+            industry = t('ind_school');
+            advice = t('adv_school').replace('{top}', topFactor);
         }
         return { industry, advice };
     }
@@ -351,14 +526,13 @@
         return x > 0 ? 1 - p : p;
     }
     
-    // 逆行列計算（失敗時は null を返す）
     function invertMatrix(M) {
         let n = M.length; let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
         let A = M.map(row => [...row]);
         for (let i = 0; i < n; i++) {
             let maxEl = Math.abs(A[i][i]); let maxRow = i;
             for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
-            if (maxEl === 0) return null; // 行列が特異（計算不可）の場合
+            if (maxEl === 0) return null; 
             for (let k = 0; k < n; k++) { [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]]; [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]]; }
             let pivot = A[i][i];
             for (let k = 0; k < n; k++) { A[i][k] /= pivot; I[i][k] /= pivot; }
@@ -395,7 +569,6 @@
             if((p>=0.5?1:0)===y[i]) correct++;
         }
         let cov = invertMatrix(H); 
-        // ▼ エラー回避：計算できない場合はエラーフラグを返す ▼
         if(!cov) return { error: true };
 
         let se = Array(n+1).fill(0), pVal = Array(n+1).fill(0), ci95 = Array(n+1).fill(null);
@@ -420,7 +593,6 @@
         for(let i=0; i<m; i++) for(let r=0; r<k; r++) for(let c=0; c<k; c++) XtX[r][c]+=Xd[i][r]*Xd[i][c];
         
         let XtX_inv = invertMatrix(XtX);
-        // ▼ エラー回避：計算できない場合はエラーフラグを返す ▼
         if(!XtX_inv) return { error: true };
 
         let Xty = Array(k).fill(0);
@@ -449,7 +621,7 @@
     }
 
     document.getElementById('analyzeBtn').addEventListener('click', () => {
-        if (currentData.length === 0) return alert("データがありません！");
+        if (currentData.length === 0) return alert(t('alert_no_data'));
         document.getElementById('analyzeBtn').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
         document.getElementById('resultArea').style.display = 'none';
@@ -460,14 +632,12 @@
             const featureNames = currentColumns.slice(0, -1);
             const targetName = currentColumns[currentColumns.length - 1];
             
-            // 金額かどうか判定
-            const isAmount = targetName.includes('円') || targetName.includes('金額') || targetName.includes('売上');
+            const isAmount = targetName.includes('円') || targetName.includes('金額') || targetName.includes('売上') || targetName.includes('yen') || targetName.includes('Sales');
 
             let res = currentAnalysisType === "logistic" ? runLogistic(X, y) : runLinear(X, y);
 
-            // ▼ フリーズ回避のメッセージ ▼
             if(res.error) {
-                alert("💦 【AIからのお願い】\n計算の途中でエラーが発生しました。\n\n・「全員が同じ数字」になっている列\n・「名前」など全員がバラバラすぎる列\n・項目同士が似すぎている列\n\nこれらがあるとAIが混乱してしまいます。\n不要な列を削除して、もう一度お試しください！");
+                alert(t('err_msg'));
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('analyzeBtn').style.display = 'block';
                 return;
@@ -487,38 +657,33 @@
 
             const aiBrain = generateAiAdvice(featureNames, targetName, topFactorName);
             document.getElementById('aiAdviceArea').innerHTML = `
-                <strong class="title">🤖 AIからの提案 (${aiBrain.industry}向け)</strong>
+                <strong class="title">${t('ai_advice_title').replace('{ind}', aiBrain.industry)}</strong>
                 <p>${aiBrain.advice}</p>
             `;
 
             analysisResultData = { type: currentAnalysisType, topFactor: topFactorName, items: importanceData, target: targetName, isAmount: isAmount, acc: res.accuracy ? (res.accuracy*100).toFixed(1) : null, r2: res.r2 ? res.r2.toFixed(3) : null };
 
             let msg = `
-                <div style="font-size: 22px; font-weight: bold; margin-bottom: 15px; color:#E91E63;">🎉 診断が完了しました！</div>
-                「${targetName}」を引き上げる最大の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> でした！<br>
-                この要素を少し工夫するだけで、数字がグッと良くなる可能性が高いです✨
+                <div style="font-size: 22px; font-weight: bold; margin-bottom: 15px; color:#E91E63;">${t('diag_complete')}</div>
+                ${t('diag_msg').replace('{target}', targetName).replace('{top}', topFactorName)}
             `;
             document.getElementById('conclusion').innerHTML = msg;
 
             if (currentAnalysisType === "logistic") {
                 document.getElementById('chartExplanation').innerHTML = `
-                    <strong class="title">💡 グラフの見方（リピート倍率 / オッズ比とは？）</strong>
-                    <p>右に棒が伸びているほど、目標（${targetName}）に繋がりやすい「良い行動」です。<br>
-                    <strong>【オッズ比の例】</strong>もし『デザート』のオッズ比が <strong>2.5倍</strong> なら、デザートを頼んだお客様は、頼まなかったお客様に比べて <strong>2.5倍も次回リピートしやすい</strong>、という意味になります！（1.0なら影響なし、1未満なら逆効果です）<br>
-                    ※棒をタップすると、それぞれの項目の倍率が見れます。</p>
+                    <strong class="title">${t('exp_log_title')}</strong>
+                    <p>${t('exp_log_desc').replace('{target}', targetName)}</p>
                 `;
             } else {
                 document.getElementById('chartExplanation').innerHTML = `
-                    <strong class="title">💡 グラフの見方（${isAmount ? "売上アップ額" : "アップ数"}）</strong>
-                    <p>右に棒が伸びているほど、目標の数字（${targetName}）を大きく引き上げてくれる「優秀な要素」です。<br>
-                    棒をタップすると、<strong>「その要素を1増やしたら、結果がどれくらい増えるか」</strong>が見れます！</p>
+                    <strong class="title">${isAmount ? t('exp_lin_title_amt') : t('exp_lin_title_cnt')}</strong>
+                    <p>${t('exp_lin_desc').replace('{target}', targetName)}</p>
                 `;
             }
 
             drawChart(importanceData, isAmount);
             drawRegressionChart(X, y, res, currentAnalysisType);
 
-            // ガチ統計表と回帰式の生成
             let eqText = currentAnalysisType === "logistic" ? `logit(p) = ${res.bias.toFixed(4)} <br>` : `y = ${formatNumber(res.bias)} <br>`;
             featureNames.forEach((name, i) => {
                 let sign = res.weights[i] >= 0 ? "+" : "-";
@@ -527,10 +692,10 @@
             });
 
             let statHtml = `
-                <div class="equation"><strong>[AIが導き出した方程式（回帰モデル）]</strong><br>${eqText}</div>
+                <div class="equation"><strong>${t('stat_eq')}</strong><br>${eqText}</div>
                 <table class="stat-table">
-                    <thead><tr><th>変数</th><th>推定値 (β)</th><th>標準誤差 (SE)</th><th>p値</th>
-                    ${currentAnalysisType === "logistic" ? '<th>オッズ比</th><th>OR 95% CI</th>' : '<th>95% CI</th>'}
+                    <thead><tr><th>${t('stat_var')}</th><th>${t('stat_est')}</th><th>${t('stat_se')}</th><th>${t('stat_p')}</th>
+                    ${currentAnalysisType === "logistic" ? `<th>${t('stat_or')}</th><th>95% CI</th>` : '<th>95% CI</th>'}
                     </tr></thead><tbody>
                     <tr><td>(Intercept)</td><td>${currentAnalysisType==="logistic" ? res.bias.toFixed(4) : formatNumber(res.bias)}</td><td>${res.stdErrors[0].toFixed(4)}</td><td>${res.pValues[0].toFixed(4)}</td>${currentAnalysisType === "logistic" ? '<td>-</td><td>-</td>' : '<td>-</td>'}</tr>
             `;
@@ -549,7 +714,7 @@
                 statHtml += `</tr>`;
             });
             statHtml += `</tbody></table>`;
-            statHtml += `<div style="margin-top: 10px; font-weight:bold;">${currentAnalysisType === "logistic" ? "モデルの予測正解率 (Accuracy): " + analysisResultData.acc + "%" : "モデルの当てはまり度 (決定係数 R²): " + analysisResultData.r2}</div>`;
+            statHtml += `<div style="margin-top: 10px; font-weight:bold;">${currentAnalysisType === "logistic" ? t('stat_acc').replace('{val}', analysisResultData.acc) : t('stat_r2').replace('{val}', analysisResultData.r2)}</div>`;
             document.getElementById('statDetails').innerHTML = statHtml;
 
             document.getElementById('loading').style.display = 'none';
@@ -567,7 +732,7 @@
             data: {
                 labels: dataList.map(d => d.name),
                 datasets: [{
-                    label: 'お店の売上・ファン化への貢献度',
+                    label: t('chart_label_log'),
                     data: dataList.map(d => d.stdCoef),
                     backgroundColor: dataList.map(d => d.stdCoef > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
                     borderColor: dataList.map(d => d.stdCoef > 0 ? '#FF7A9A' : '#6495ED'),
@@ -582,8 +747,8 @@
                         callbacks: {
                             label: function(context) {
                                 let d = context.dataset.rawData[context.dataIndex];
-                                if(currentAnalysisType === "logistic") return `✨ リピート倍率: ${d.oddsRatio.toFixed(2)} 倍`;
-                                else return `✨ 1増えると結果が +${formatNumber(d.coef)}${isAmount ? " 円" : ""}！`;
+                                if(currentAnalysisType === "logistic") return t('tooltip_odds').replace('{val}', d.oddsRatio.toFixed(2));
+                                else return t('tooltip_lin').replace('{val}', formatNumber(d.coef)).replace('{unit}', isAmount ? t('unit_yen') : "");
                             }
                         }
                     }
@@ -596,16 +761,14 @@
         const ctx = document.getElementById('regressionChart').getContext('2d');
         if (regChartInstance) regChartInstance.destroy();
         
-        let scatterData = [];
-        let lineData = [];
+        let scatterData = []; let lineData = [];
 
         if (type === "logistic") {
             let zVals = [];
             for(let i=0; i<X.length; i++) {
                 let z = res.bias;
                 for(let j=0; j<X[0].length; j++) z += res.weights[j] * X[i][j];
-                zVals.push(z);
-                scatterData.push({ x: z, y: y[i] });
+                zVals.push(z); scatterData.push({ x: z, y: y[i] });
             }
             let zMin = Math.min(...zVals); let zMax = Math.max(...zVals);
             for(let i=0; i<=50; i++) {
@@ -616,46 +779,30 @@
                 type: 'scatter',
                 data: {
                     datasets: [
-                        { label: '実際のお客様データ', data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
-                        { label: 'AI予測確率 (シグモイド曲線)', data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }
+                        { label: t('lbl_actual'), data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
+                        { label: t('lbl_pred_log'), data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: { title: { display: true, text: 'AIの総合スコア (全変数の合算)' } },
-                        y: { title: { display: true, text: '確率 (ゴール)' } }
-                    }
-                }
+                options: { responsive: true, scales: { x: { title: { display: true, text: t('axis_x_log') } }, y: { title: { display: true, text: t('axis_y_log') } } } }
             });
         } else {
             let yPredVals = [];
             for(let i=0; i<X.length; i++) {
                 let y_pred = res.bias;
                 for(let j=0; j<X[0].length; j++) y_pred += res.weights[j] * X[i][j];
-                yPredVals.push(y_pred);
-                scatterData.push({ x: y_pred, y: y[i] });
+                yPredVals.push(y_pred); scatterData.push({ x: y_pred, y: y[i] });
             }
-            
-            let minVal = Math.min(...yPredVals, ...y);
-            let maxVal = Math.max(...yPredVals, ...y);
+            let minVal = Math.min(...yPredVals, ...y); let maxVal = Math.max(...yPredVals, ...y);
             lineData = [ { x: minVal, y: minVal }, { x: maxVal, y: maxVal } ];
-
             regChartInstance = new Chart(ctx, {
                 type: 'scatter',
                 data: {
                     datasets: [
-                        { label: '実際のお客様データ', data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
-                        { label: '理想の予測線 (予測と実際が一致)', data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false }
+                        { label: t('lbl_actual'), data: scatterData, backgroundColor: 'rgba(100, 149, 237, 0.6)', borderColor: '#6495ED', pointRadius: 4 },
+                        { label: t('lbl_pred_lin'), data: lineData, type: 'line', borderColor: '#E91E63', borderWidth: 2, pointRadius: 0, fill: false }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: { title: { display: true, text: 'AIの予測数値' } },
-                        y: { title: { display: true, text: '実際の数値 (ゴール)' } }
-                    }
-                }
+                options: { responsive: true, scales: { x: { title: { display: true, text: t('axis_x_lin') } }, y: { title: { display: true, text: t('axis_y_lin') } } } }
             });
         }
     }
@@ -667,7 +814,9 @@
 
     document.getElementById('twitterShareBtn').addEventListener('click', () => {
         if(!analysisResultData) return;
-        let text = encodeURIComponent(`AIがお店のファンと売上UPのヒントを無料診断してくれました！📊✨\n私の店の最大の鍵は「${analysisResultData.topFactor}」でした！\n\n#店舗経営 #データ分析 #AI無料診断 `);
+        let text = currentLang === 'ja' 
+            ? encodeURIComponent(`AIがお店のファンと売上UPのヒントを無料診断してくれました！📊✨\n私の店の最大の鍵は「${analysisResultData.topFactor}」でした！\n\n#店舗経営 #データ分析 #AI無料診断 `)
+            : encodeURIComponent(`AI gave a free diagnosis for hints to increase fans and boost sales!📊✨\nThe biggest key for my shop was "${analysisResultData.topFactor}"!\n\n#DataAnalysis #Business #FreeAI `);
         let url = encodeURIComponent("https://ck121212195.github.io/DATA/");
         window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
     });

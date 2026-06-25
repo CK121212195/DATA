@@ -1,121 +1,364 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>AIリピート診断アプリ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.css"/>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌷 常連さん発見AI 診断ルーム</title>
+    
+    <!-- 必要なのはこの2つだけ！（CSV読み込み用とグラフ描画用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-      /* 背景色だけ指定しておき、自作の邪魔なローディング幕は撤去しました */
-      body { margin: 0; background-color: #FFF0F5; font-family: sans-serif; }
-    </style>
-  </head>
-  <body>
-    <!-- ここにアプリが展開されます -->
-    <div id="root"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.js"></script>
-    <script>
-      stlite.mount({
-        requirements: ["pandas", "numpy", "scikit-learn"],
-        entrypoint: "streamlit_app.py",
-        files: {
-          "streamlit_app.py": `
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-import time
-
-st.set_page_config(page_title="常連さん発見AI", page_icon="🌷", layout="centered")
-
-st.markdown("""
-<style>
-    .stApp { background-color: #FFF0F5 !important; }
-    .stApp, .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #4A4A4A !important; }
-    div.stButton > button:first-child { background-color: #FF7A9A !important; color: white !important; border: none !important; border-radius: 8px !important; font-weight: bold; }
-    a[data-testid="stLinkButton"] button { background-color: #FF7A9A !important; color: white !important; border: none !important; }
-</style>
-""", unsafe_allow_html=True)
-
-st.title("🌷 常連さん発見AI 診断ルーム")
-st.write("お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨")
-
-data_source = st.radio("分析するデータを選んでみましょう👇", ["✨ サンプルデータでまずは試す", "📁 自分のデータ(CSV)をアップロード"])
-
-df = None
-if "サンプル" in data_source:
-    st.info("💡 架空のカフェのデータ（100件）をご用意しました。")
-    np.random.seed(42)
-    df = pd.DataFrame({
-        "客単価(円)": np.random.randint(800, 3000, 100),
-        "滞在時間(分)": np.random.randint(20, 120, 100),
-        "デザート注文(1=あり)": np.random.choice([0, 1], 100),
-        "クーポン利用(1=あり)": np.random.choice([0, 1], 100),
-    })
-    prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(1=あり)"] + 0.5*df["クーポン利用(1=あり)"])))
-    df["次回来店したか(1=はい)"] = (np.random.rand(100) < prob).astype(int)
-    st.dataframe(df.head(3), use_container_width=True)
-else:
-    uploaded_file = st.file_uploader("お手持ちのCSVファイルを入れてください🎵", type=["csv"])
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.success("データを受け取りました！")
-        st.dataframe(df.head(3), use_container_width=True)
-
-if df is not None:
-    st.markdown("### 🪄 2. AI無料診断プレビュー")
-    if st.button("🔮 ワンタップで分析スタート！", type="primary"):
-        with st.spinner("AIがお客様の心を読み解いています..."):
-            time.sleep(1)
-            try:
-                X = df.drop(df.columns[-1], axis=1)
-                y = df[df.columns[-1]]
-                model = LogisticRegression()
-                model.fit(X, y)
-                accuracy = model.score(X, y)
-                coef = model.coef_[0]
-                odds_ratios = np.exp(coef)
-                
-                importance = pd.DataFrame({
-                    "分析要素": X.columns, 
-                    "影響スコア(回帰係数)": coef,
-                    "リピート倍率(オッズ比)": odds_ratios
-                }).sort_values(by="影響スコア(回帰係数)", ascending=False)
-                
-                st.session_state["analyzed"] = True
-                st.session_state["top_factor"] = importance.iloc[0]["分析要素"]
-                st.session_state["importance"] = importance
-                st.session_state["accuracy"] = accuracy
-            except Exception as e:
-                st.error("💦 エラーが発生しました。データの形式を確認してください。")
-
-if st.session_state.get("analyzed"):
-    top = st.session_state["top_factor"]
-    acc = st.session_state["accuracy"]
-    imp_df = st.session_state["importance"]
-    
-    st.success(f"🎉 分析完了！お店のファンを増やす一番の鍵は ズバリ **『{top}』** でした！")
-    st.bar_chart(imp_df.set_index("分析要素")["影響スコア(回帰係数)"])
-    
-    with st.expander("📊 専門家向け：AI分析のエビデンス（計算根拠）"):
-        st.write("当サービスは、統計学における**「ロジスティック回帰分析」**を用いて結果を算出しています。")
-        st.markdown(f"**■ モデルの予測正解率 (Accuracy):** `{acc*100:.1f}%`")
-        st.dataframe(imp_df, use_container_width=True)
-    
-    st.markdown("---")
-    st.markdown("### 🎁 3. プロ仕様の詳細レポートを発行 (500円)")
-    st.link_button("💳 Squareで決済してパスコードを入手する（500円）", "https://square.link/YOUR_DUMMY_LINK")
-    st.caption("※ 決済完了画面に表示される「パスコード」を下に入力してください。")
-    passcode = st.text_input("🔑 パスコードを入力", type="password")
-    if passcode == "2026BASE":
-        st.success("✅ 決済が確認できました！ありがとうございます💕")
-        report_text = f"【AIリピート診断 詳細レポート】\\n\\n■ 結論:\\nあなたのお店で最もリピートに貢献している要素は「{top}」です。\\n（AIの予測正解率: {acc*100:.1f}%）\\n\\n■ 明日からのアクションプラン:\\nこの要素を伸ばすためのキャンペーンを企画し、お客様への声掛けを徹底してください。\\n\\n※この分析はお客様の端末上で安全に計算されました。"
-        st.download_button("📄 詳細レポートをダウンロード", data=report_text, file_name="AI_Report.txt", mime="text/plain", type="primary")
-    elif passcode != "":
-        st.error("パスコードが間違っているようです💦")
-`
+        /* 🌸 女性向け・可愛いピンクのUIデザイン */
+        body {
+            background-color: #FFF0F5;
+            color: #4A4A4A;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            margin: 0; padding: 20px;
         }
-      });
-    </script>
-  </body>
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #FFFFFF;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(255, 122, 154, 0.1);
+        }
+        h1 { color: #FF7A9A; text-align: center; font-size: 24px; }
+        h2 { font-size: 18px; border-bottom: 2px solid #FFE4E1; padding-bottom: 5px; margin-top: 30px;}
+        p { line-height: 1.6; }
+        
+        /* ボタンのデザイン */
+        .btn {
+            background-color: #FF7A9A; color: white;
+            border: none; padding: 15px 20px; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            width: 100%; transition: background-color 0.3s;
+            margin-top: 15px; box-sizing: border-box; text-align: center;
+        }
+        .btn:hover { background-color: #FF5C83; }
+        .btn:disabled { background-color: #FFC0CB; cursor: not-allowed; }
+        
+        /* リンクボタン（Square決済用など） */
+        .link-btn {
+            display: inline-block; background-color: #4A90E2; color: white;
+            text-decoration: none; padding: 12px 20px; border-radius: 8px;
+            font-weight: bold; width: 100%; box-sizing: border-box; text-align: center; margin-top: 10px;
+        }
+        
+        /* 入力フォーム類 */
+        .radio-group { margin-bottom: 20px; }
+        .radio-group label { display: block; margin: 8px 0; cursor: pointer; font-weight: bold;}
+        input[type="file"] { margin: 10px 0; padding: 10px; border: 1px dashed #FF7A9A; border-radius: 8px; width: 100%; box-sizing: border-box;}
+        input[type="password"] { padding: 12px; border: 1px solid #FFC0CB; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 16px;}
+        
+        /* テーブルデザイン */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #FFE4E1; padding: 8px; text-align: center; }
+        th { background-color: #FFF0F5; color: #FF7A9A; }
+        
+        /* エビデンス等のアコーディオン */
+        details { background: #F9F9F9; padding: 10px; border-radius: 8px; margin-top: 20px; cursor: pointer; }
+        summary { font-weight: bold; color: #333; outline: none; }
+        
+        /* ローディング・結果エリアの表示制御 */
+        #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
+        #resultArea { display: none; }
+        .success-msg { background: #E8F5E9; color: #2E7D32; padding: 15px; border-radius: 8px; font-weight: bold; margin: 20px 0;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌷 常連さん発見AI 診断ルーム</h1>
+    <p>お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨ 難しい計算はお任せください！</p>
+
+    <!-- 1. データ準備エリア -->
+    <h2>🌸 1. データの準備</h2>
+    <div class="radio-group">
+        <label><input type="radio" name="dataSource" value="sample" checked> ✨ サンプルデータでまずは試す（おすすめ！）</label>
+        <label><input type="radio" name="dataSource" value="csv"> 📁 自分のデータ(CSV)をアップロードする</label>
+    </div>
+
+    <div id="uploadArea" style="display: none;">
+        <input type="file" id="csvFileInput" accept=".csv" />
+    </div>
+
+    <div id="dataPreviewArea">
+        <p style="font-size: 14px; color: #666;">💡 架空のカフェのデータ（100件）をご用意しました。このまま進んでみてください！</p>
+        <div style="overflow-x: auto;">
+            <table id="previewTable"></table>
+        </div>
+    </div>
+
+    <!-- 2. 分析実行エリア -->
+    <h2>🪄 2. AI無料診断プレビュー</h2>
+    <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
+    <div id="loading">✨ AIがお客様の心を読み解いています... (ちょっと待ってね☕)</div>
+
+    <!-- 3. 結果表示エリア -->
+    <div id="resultArea">
+        <div id="conclusion" class="success-msg"></div>
+        
+        <p>▼ 要素ごとの影響力グラフ</p>
+        <canvas id="myChart"></canvas>
+
+        <details>
+            <summary>📊 専門家向け：AI分析のエビデンス（計算根拠）</summary>
+            <p>当サービスは、統計学における<strong>「ロジスティック回帰分析」</strong>を用いて算出しています。</p>
+            <p id="accuracyText"></p>
+            <table id="evidenceTable"></table>
+        </details>
+
+        <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 30px 0;">
+
+        <h2>🎁 3. プロ仕様の詳細レポートを発行 (500円)</h2>
+        <p>明日からすぐにお店で使える「具体的な売上アップのアクションプラン」付きの詳細レポートを発行します💌</p>
+        
+        <a href="https://square.link/YOUR_DUMMY_LINK" target="_blank" class="link-btn">💳 Squareで決済してパスコードを入手する（500円）</a>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">※ 決済完了画面に表示される「パスコード」を下に入力してください。</p>
+        
+        <input type="password" id="passcodeInput" placeholder="🔑 パスコードを入力">
+        <button class="btn" id="downloadBtn" style="background-color: #2E7D32;">📄 詳細レポートをダウンロード</button>
+    </div>
+</div>
+
+<script>
+    // --- 🌍 アプリのグローバル変数 ---
+    let currentColumns = []; // 列の名前
+    let currentData = [];    // データの配列 [[値, 値...], [値, 値...]]
+    let chartInstance = null;
+    let topFactorName = "";
+    let modelAccuracy = 0;
+
+    // --- 🛠️ 1. データ準備（サンプル生成とCSV読み込み） ---
+    
+    // サンプルデータ生成関数
+    function generateSampleData() {
+        currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(1=はい)"];
+        currentData = [];
+        for (let i = 0; i < 100; i++) {
+            let tanka = Math.floor(Math.random() * 2200) + 800;
+            let time = Math.floor(Math.random() * 100) + 20;
+            let dessert = Math.random() < 0.5 ? 1 : 0;
+            let coupon = Math.random() < 0.5 ? 1 : 0;
+            // リピート確率の計算ロジック（デザートが一番効く設定）
+            let z = -2 + 0.001 * tanka + 2.0 * dessert + 0.5 * coupon;
+            let prob = 1 / (1 + Math.exp(-z));
+            let repeat = Math.random() < prob ? 1 : 0;
+            currentData.push([tanka, time, dessert, coupon, repeat]);
+        }
+        renderPreviewTable();
+    }
+
+    // テーブルにデータをプレビュー表示（3行だけ）
+    function renderPreviewTable() {
+        const table = document.getElementById('previewTable');
+        let html = `<tr>${currentColumns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+        for (let i = 0; i < Math.min(3, currentData.length); i++) {
+            html += `<tr>${currentData[i].map(val => `<td>${val}</td>`).join('')}</tr>`;
+        }
+        table.innerHTML = html;
+    }
+
+    // ラジオボタンの切り替えイベント
+    document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            document.getElementById('resultArea').style.display = 'none';
+            if (e.target.value === 'sample') {
+                document.getElementById('uploadArea').style.display = 'none';
+                generateSampleData();
+            } else {
+                document.getElementById('uploadArea').style.display = 'block';
+                document.getElementById('previewTable').innerHTML = ''; // 表をクリア
+                currentColumns = []; currentData = [];
+            }
+        });
+    });
+
+    // CSVファイルの読み込み処理 (PapaParse)
+    document.getElementById('csvFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                if(results.data.length === 0) return alert("データが空です");
+                currentColumns = Object.keys(results.data[0]);
+                currentData = results.data.map(row => currentColumns.map(col => Number(row[col]) || 0));
+                renderPreviewTable();
+            }
+        });
+    });
+
+    // 初期起動時にサンプルデータを生成
+    generateSampleData();
+
+
+    // --- 🧠 2. AIエンジン（JSで自作したロジスティック回帰） ---
+    // PythonがなくてもJSで一瞬で計算できる魔法の関数です。
+    
+    function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+    function runLogisticRegression(X, y) {
+        const m = X.length;    // データ件数
+        const n = X[0].length; // 要素（変数）の数
+        
+        // ① データの標準化（大きすぎる数字を揃えて計算しやすくする）
+        const means = Array(n).fill(0);
+        const stds = Array(n).fill(0);
+        for(let j=0; j<n; j++) {
+            let sum = 0; for(let i=0; i<m; i++) sum += X[i][j];
+            means[j] = sum / m;
+            let sqSum = 0; for(let i=0; i<m; i++) sqSum += Math.pow(X[i][j] - means[j], 2);
+            stds[j] = Math.sqrt(sqSum / m) || 1;
+        }
+        const X_scaled = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
+        
+        // ② 勾配降下法（AIの学習プロセス）
+        let weights = Array(n).fill(0);
+        let bias = 0;
+        const epochs = 1000; const lr = 0.5; // 学習回数と学習率
+        
+        for(let epoch=0; epoch<epochs; epoch++) {
+            let dw = Array(n).fill(0); let db = 0;
+            for(let i=0; i<m; i++) {
+                let z = bias;
+                for(let j=0; j<n; j++) z += weights[j] * X_scaled[i][j];
+                let err = sigmoid(z) - y[i];
+                for(let j=0; j<n; j++) dw[j] += err * X_scaled[i][j];
+                db += err;
+            }
+            for(let j=0; j<n; j++) weights[j] -= (lr * dw[j]) / m;
+            bias -= (lr * db) / m;
+        }
+        
+        // ③ 学習結果を元の数字のスケールに戻す
+        let originalWeights = Array(n).fill(0);
+        for(let j=0; j<n; j++) originalWeights[j] = weights[j] / stds[j];
+        
+        // ④ 正解率（Accuracy）の計算
+        let correct = 0;
+        for(let i=0; i<m; i++) {
+            let z = bias;
+            for(let j=0; j<n; j++) z += weights[j] * X_scaled[i][j];
+            if ((sigmoid(z) >= 0.5 ? 1 : 0) === y[i]) correct++;
+        }
+        
+        return { weights: originalWeights, accuracy: correct / m };
+    }
+
+
+    // --- 📊 3. 分析ボタンが押された時の処理 ---
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+        if (currentData.length === 0) return alert("データがありません！CSVを入れるかサンプルを選んでください。");
+
+        // ローディング演出（AIが考えてる感 を出すためにあえて0.8秒待たせる）
+        document.getElementById('analyzeBtn').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultArea').style.display = 'none';
+
+        setTimeout(() => {
+            // 分析データの準備（一番右の列が「結果(y)」、それ以外が「要素(X)」）
+            const X = currentData.map(row => row.slice(0, -1));
+            const y = currentData.map(row => row[row.length - 1]);
+            const featureNames = currentColumns.slice(0, -1);
+
+            // 自作のAIエンジン実行！
+            const result = runLogisticRegression(X, y);
+            modelAccuracy = result.accuracy;
+
+            // 結果を整理（オッズ比などを計算）
+            let importanceData = featureNames.map((name, i) => {
+                let coef = result.weights[i];
+                return {
+                    name: name,
+                    coef: coef,
+                    oddsRatio: Math.exp(coef) // オッズ比（何倍リピートしやすくなるか）
+                };
+            });
+
+            // 影響力（回帰係数の絶対値）が大きい順に並び替え
+            importanceData.sort((a, b) => Math.abs(b.coef) - Math.abs(a.coef));
+            
+            topFactorName = importanceData[0].name;
+
+            // 画面の更新
+            document.getElementById('conclusion').innerHTML = `🎉 分析完了！お店のファンを増やす一番の鍵は ズバリ <strong>『${topFactorName}』</strong> でした！`;
+            
+            // グラフの描画 (Chart.js)
+            drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef));
+
+            // エビデンス表の生成
+            document.getElementById('accuracyText').innerHTML = `<strong>■ モデルの予測正解率 (Accuracy):</strong> ${(modelAccuracy * 100).toFixed(1)}%`;
+            let tableHtml = `<tr><th>分析要素</th><th>影響スコア(回帰係数)</th><th>リピート倍率(オッズ比)</th></tr>`;
+            importanceData.forEach(d => {
+                tableHtml += `<tr><td>${d.name}</td><td>${d.coef.toFixed(4)}</td><td>${d.oddsRatio.toFixed(2)}倍</td></tr>`;
+            });
+            document.getElementById('evidenceTable').innerHTML = tableHtml;
+
+            // 演出終了、結果表示
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('analyzeBtn').style.display = 'block';
+            document.getElementById('resultArea').style.display = 'block';
+
+        }, 800); // 0.8秒後に結果が出る
+    });
+
+    // グラフ描画関数
+    function drawChart(labels, data) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy(); // 古いグラフを消す
+        
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'リピートへの影響力（プラスなら効果あり！）',
+                    data: data,
+                    backgroundColor: data.map(v => v > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(169, 169, 169, 0.6)'),
+                    borderColor: data.map(v => v > 0 ? '#FF7A9A' : '#A9A9A9'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // --- 🔒 4. マネタイズ機能（パスコードとPDF/TXTダウンロード） ---
+    
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        const code = document.getElementById('passcodeInput').value;
+        
+        if (code === "2026BASE") {
+            alert("✅ 決済が確認できました！ありがとうございます💕\nレポートをダウンロードします。");
+            
+            const acc = (modelAccuracy * 100).toFixed(1);
+            const reportText = `【AIリピート診断 詳細レポート】\n\n■ 結論:\nあなたのお店で最もリピートに貢献している要素は「${topFactorName}」です。\n（AIの予測正解率: ${acc}%）\n\n■ 明日からのアクションプラン:\nこの要素を伸ばすためのキャンペーン（例：注文時のサービスなど）を企画し、お客様への声掛けを徹底してください。\n\n※この分析はお客様の端末上で安全に計算されました。データは外部に一切送信されていません。`;
+            
+            // JavaScriptだけでテキストファイルを生成してダウンロードさせる裏技
+            const blob = new Blob([reportText], {type: "text/plain"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "AI_Report.txt";
+            a.click();
+            URL.revokeObjectURL(url);
+            
+        } else {
+            alert("💦 パスコードが間違っているようです。もう一度確認してください。");
+        }
+    });
+
+</script>
+
+</body>
 </html>

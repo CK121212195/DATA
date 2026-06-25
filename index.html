@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🌷 常連さん発見AI 診断ルーム</title>
     
-    <!-- 必要なライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 追加：本物のPDFを出力するためのライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -18,7 +16,7 @@
             margin: 0; padding: 20px;
         }
         .container {
-            max-width: 700px; margin: 0 auto; background: #FFFFFF;
+            max-width: 800px; margin: 0 auto; background: #FFFFFF;
             padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(255, 122, 154, 0.1);
         }
         h1 { color: #FF7A9A; text-align: center; font-size: 24px; }
@@ -29,8 +27,6 @@
             background-color: #FFF9FA; border-left: 4px solid #FFC0CB;
             padding: 12px 15px; margin-bottom: 20px; border-radius: 4px; font-size: 14px;
         }
-        .explanation-box p { margin: 6px 0; }
-        
         .marker {
             background: linear-gradient(transparent 60%, #FFC0CB 60%);
             font-weight: bold; font-size: 18px; color: #E91E63;
@@ -55,9 +51,9 @@
         input[type="password"] { padding: 12px; border: 1px solid #FFC0CB; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 16px;}
         
         .table-wrapper { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
-        th, td { border: 1px solid #FFE4E1; padding: 8px 12px; text-align: center; }
-        th { background-color: #FFF0F5; color: #FF7A9A; }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+        .preview-table th, .preview-table td { border: 1px solid #FFE4E1; padding: 8px 12px; text-align: center; }
+        .preview-table th { background-color: #FFF0F5; color: #FF7A9A; }
         
         details { background: #F9F9F9; padding: 10px; border-radius: 8px; margin-top: 20px; cursor: pointer; }
         summary { font-weight: bold; color: #333; outline: none; padding: 5px 0;}
@@ -65,9 +61,19 @@
         #loading { display: none; text-align: center; color: #FF7A9A; font-weight: bold; margin: 20px 0; }
         #resultArea { display: none; }
         .success-msg { background: #E8F5E9; color: #2E7D32; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;}
-        
-        /* PDF出力用の装飾 */
         #pdfContentArea { background: #fff; padding: 10px; }
+
+        /* ガチ統計家向けのUIスタイル */
+        .stat-section {
+            background-color: #f4f6f8; border: 1px solid #dcdfe6; border-radius: 6px;
+            padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 13px;
+            color: #333; margin-top: 15px; overflow-x: auto; cursor: text;
+        }
+        .stat-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .stat-table th, .stat-table td { border: 1px solid #ccc; padding: 6px 8px; text-align: right; }
+        .stat-table th { background-color: #e2e8f0; text-align: center; color: #333; font-weight: bold;}
+        .stat-table td:first-child { text-align: left; font-weight: bold; }
+        .equation { background: #fff; padding: 10px; border-left: 4px solid #4A90E2; margin-bottom: 15px; line-height: 1.8;}
     </style>
 </head>
 <body>
@@ -77,14 +83,11 @@
     <p>お店のデータを入れるだけで、「どんなお客さんがファンになってくれるか」をAIが分析します✨<br>
     ※お客様のデータはサーバーに送信されず、この画面上で安全に処理されます。</p>
 
-    <!-- 1. データ準備エリア -->
     <h2>🌸 1. データの準備</h2>
     
     <div class="explanation-box">
-        <p><strong>❓ 何を準備すればいいの？</strong></p>
-        <p>お店の過去のデータから、<strong>「お客様の特徴（使った金額など）」</strong>と<strong>「一番右の列に『次も来てくれたか？』」</strong>をまとめた表（CSV）をご用意ください。</p>
-        <p><strong>💡 「1」と「0」のルール</strong></p>
-        <p>AIは文字を読むのが苦手です。一番右の列（リピート結果）は必ず、<strong>「1＝はい（来た）」「0＝いいえ（来なかった）」</strong>という数字にしてください！</p>
+        <p><strong>💡 ルールのおさらい</strong></p>
+        <p>お店の過去データ（CSV）をご用意ください。<strong>一番右の列は必ず「1＝はい（来た）」「0＝いいえ（来なかった）」</strong>にしてください。</p>
     </div>
 
     <div class="radio-group">
@@ -97,21 +100,16 @@
     </div>
 
     <div id="dataPreviewArea">
-        <p style="font-size: 14px; color: #666;">💡 架空のカフェのデータ（100件）をご用意しました。このまま進んでみてください！</p>
         <div class="table-wrapper">
-            <table id="previewTable"></table>
+            <table class="preview-table" id="previewTable"></table>
         </div>
     </div>
 
-    <!-- 2. 分析実行エリア -->
     <h2>🪄 2. AI無料診断プレビュー</h2>
     <button class="btn" id="analyzeBtn">🔮 ワンタップで分析スタート！</button>
-    <div id="loading">✨ AIがお客様のデータを読み解いています... (ちょっと待ってね☕)</div>
+    <div id="loading">✨ AI（ロジスティック回帰モデル）がデータを学習しています...</div>
 
-    <!-- 3. 結果表示エリア -->
     <div id="resultArea">
-        
-        <!-- ▼▼▼ ここから下がPDF化されるエリア ▼▼▼ -->
         <div id="pdfContentArea">
             <h2 style="text-align:center; color:#FF7A9A; border:none; margin-top:0;">📋 リピート要因 AI分析レポート</h2>
             <div id="conclusion" class="success-msg"></div>
@@ -120,30 +118,20 @@
             <canvas id="myChart"></canvas>
 
             <details open>
-                <summary>📊 計算根拠（オッズ比データ）</summary>
+                <summary>📊 専門家向け：計算根拠と詳細な統計情報（ガチ勢用）</summary>
                 <div class="explanation-box" style="margin-top: 15px;">
-                    <p><strong>💡 リピート倍率（オッズ比）って何？</strong></p>
-                    <p>「その行動をした人が、しなかった人に比べて<strong>何倍リピートしやすいか</strong>」を表す数字です。<br>
-                    例えばここが「3.0倍」なら、その行動をした人は<strong>3倍も常連になりやすい</strong>という強力な武器になります！</p>
+                    <p>当分析はロジスティック回帰（Logistic Regression）を使用し、ブラウザ上でヘッセ行列を用いた最尤推定・分散共分散行列の算出を行っています。</p>
                 </div>
-                <p id="accuracyText"></p>
-                <div class="table-wrapper">
-                    <table id="evidenceTable"></table>
-                </div>
+                
+                <!-- ガチの統計表が入るエリア -->
+                <div class="stat-section" id="statDetails"></div>
             </details>
         </div>
-        <!-- ▲▲▲ ここまでがPDF化されるエリア ▲▲▲ -->
 
         <hr style="border: none; border-top: 1px dashed #FFC0CB; margin: 30px 0;">
 
-        <!-- 課金・PDFダウンロードエリア -->
         <h2>🎁 3. プロ仕様の詳細レポートを発行 (500円)</h2>
-        <p>銀行の融資提出や、スタッフとのMTGに使える「AI診断書（PDF）」を発行します💌</p>
-        
-        <!-- Squareの決済リンク（あなたのURLに書き換えてください） -->
         <a href="https://square.link/YOUR_DUMMY_LINK" target="_blank" class="link-btn">💳 Squareで決済してパスコードを入手する（500円）</a>
-        <p style="font-size: 12px; color: #666; margin-top: 5px;">※ 決済完了画面に表示される「パスコード」を下に入力してください。</p>
-        
         <input type="password" id="passcodeInput" placeholder="🔑 パスコードを入力">
         <button class="btn" id="downloadBtn" style="background-color: #2E7D32;">📄 PDFレポートをダウンロード</button>
     </div>
@@ -154,18 +142,17 @@
     let currentData = [];
     let chartInstance = null;
     let topFactorName = "";
-    let modelAccuracy = 0;
 
-    // サンプルデータの生成
     function generateSampleData() {
         currentColumns = ["客単価(円)", "滞在時間(分)", "デザート注文(1=あり)", "クーポン利用(1=あり)", "次回来店したか(1=はい)"];
         currentData = [];
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 150; i++) {
             let tanka = Math.floor(Math.random() * 2200) + 800;
             let time = Math.floor(Math.random() * 100) + 20;
             let dessert = Math.random() < 0.5 ? 1 : 0;
             let coupon = Math.random() < 0.5 ? 1 : 0;
-            let z = -2 + 0.001 * tanka + 2.0 * dessert + 0.5 * coupon;
+            // 真のモデル
+            let z = -2.5 + 0.001 * tanka + 2.2 * dessert + 0.6 * coupon;
             let prob = 1 / (1 + Math.exp(-z));
             let repeat = Math.random() < prob ? 1 : 0;
             currentData.push([tanka, time, dessert, coupon, repeat]);
@@ -173,7 +160,6 @@
         renderPreviewTable();
     }
 
-    // テーブルプレビューの描画
     function renderPreviewTable() {
         const table = document.getElementById('previewTable');
         let html = `<tr>${currentColumns.map(col => `<th>${col}</th>`).join('')}</tr>`;
@@ -183,24 +169,20 @@
         table.innerHTML = html;
     }
 
-    // ラジオボタンの切り替え
     document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             document.getElementById('resultArea').style.display = 'none';
             if (e.target.value === 'sample') {
                 document.getElementById('uploadArea').style.display = 'none';
-                document.getElementById('dataPreviewArea').querySelector('p').style.display = 'block';
                 generateSampleData();
             } else {
                 document.getElementById('uploadArea').style.display = 'block';
-                document.getElementById('dataPreviewArea').querySelector('p').style.display = 'none';
                 document.getElementById('previewTable').innerHTML = '';
                 currentColumns = []; currentData = [];
             }
         });
     });
 
-    // 📁 CSVアップロード処理（エラーハンドリング強化版）
     document.getElementById('csvFileInput').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -208,31 +190,13 @@
             header: true, dynamicTyping: true, skipEmptyLines: true,
             complete: function(results) {
                 if(results.data.length === 0) return alert("❌ データが空です！");
-                
                 currentColumns = Object.keys(results.data[0]);
-                
-                // 文字列が混じっていても数値(0)に変換してエラーを防ぐ
                 currentData = results.data.map(row => {
                     return currentColumns.map(col => {
                         let val = Number(row[col]);
                         return isNaN(val) ? 0 : val;
                     });
                 });
-
-                // 一番右の列（目的変数）が 0 と 1 だけで構成されているかチェック
-                let isBinary = true;
-                currentData.forEach(row => {
-                    let yVal = row[row.length - 1];
-                    if (yVal !== 0 && yVal !== 1) isBinary = false;
-                });
-
-                if (!isBinary) {
-                    alert("⚠️ エラー：一番右の列（リピート結果）に「1」と「0」以外の数字や文字が含まれています。直してから再度アップロードしてください！");
-                    document.getElementById('csvFileInput').value = ""; // リセット
-                    currentData = [];
-                    return;
-                }
-
                 renderPreviewTable();
             }
         });
@@ -240,24 +204,64 @@
 
     generateSampleData();
 
+    // ▼▼▼ ガチ統計演算ロジック ▼▼▼
     function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
 
-    // ロジスティック回帰の計算ロジック
+    // 標準正規分布の累積分布関数(p値計算用)
+    function normalCDF(x) {
+        let t = 1 / (1 + 0.2316419 * Math.abs(x));
+        let d = 0.3989423 * Math.exp(-x * x / 2);
+        let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        return x > 0 ? 1 - p : p;
+    }
+
+    // ガウス・ジョルダン法による逆行列計算（分散共分散行列用）
+    function invertMatrix(M) {
+        let n = M.length;
+        let I = Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0));
+        let A = M.map(row => [...row]);
+        
+        for (let i = 0; i < n; i++) {
+            let maxEl = Math.abs(A[i][i]); let maxRow = i;
+            for (let k = i + 1; k < n; k++) {
+                if (Math.abs(A[k][i]) > maxEl) { maxEl = Math.abs(A[k][i]); maxRow = k; }
+            }
+            if (maxEl === 0) return null; // 完全分離等で計算不可
+            
+            for (let k = 0; k < n; k++) {
+                [A[maxRow][k], A[i][k]] = [A[i][k], A[maxRow][k]];
+                [I[maxRow][k], I[i][k]] = [I[i][k], I[maxRow][k]];
+            }
+            let pivot = A[i][i];
+            for (let k = 0; k < n; k++) { A[i][k] /= pivot; I[i][k] /= pivot; }
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    let factor = A[j][i];
+                    for (let k = 0; k < n; k++) {
+                        A[j][k] -= factor * A[i][k];
+                        I[j][k] -= factor * I[i][k];
+                    }
+                }
+            }
+        }
+        return I;
+    }
+
     function runLogisticRegression(X, y) {
         const m = X.length; const n = X[0].length;
         const means = Array(n).fill(0); const stds = Array(n).fill(0);
         
-        // 標準化
+        // 標準化 (収束安定のため)
         for(let j=0; j<n; j++) {
             let sum = 0; for(let i=0; i<m; i++) sum += X[i][j];
             means[j] = sum / m;
             let sqSum = 0; for(let i=0; i<m; i++) sqSum += Math.pow(X[i][j] - means[j], 2);
-            stds[j] = Math.sqrt(sqSum / m) || 1; // ゼロ割防止
+            stds[j] = Math.sqrt(sqSum / m) || 1;
         }
         const X_scaled = X.map(row => row.map((val, j) => (val - means[j]) / stds[j]));
         
         let weights = Array(n).fill(0); let bias = 0;
-        const epochs = 1000; const lr = 0.5;
+        const epochs = 2000; const lr = 0.5;
         
         // 勾配降下法
         for(let epoch=0; epoch<epochs; epoch++) {
@@ -273,24 +277,86 @@
             bias -= (lr * db) / m;
         }
         
-        // 元のスケールに重みを戻す（オッズ比算出のため）
-        let originalWeights = Array(n).fill(0);
-        for(let j=0; j<n; j++) originalWeights[j] = weights[j] / stds[j];
-        
-        // 正解率の計算
-        let correct = 0;
-        for(let i=0; i<m; i++) {
-            let z = bias;
-            for(let j=0; j<n; j++) z += weights[j] * X_scaled[i][j];
-            if ((sigmoid(z) >= 0.5 ? 1 : 0) === y[i]) correct++;
+        // 元のスケールに変換
+        let origWeights = Array(n).fill(0); let origBias = bias;
+        for(let j=0; j<n; j++) {
+            origWeights[j] = weights[j] / stds[j];
+            origBias -= (weights[j] * means[j]) / stds[j];
         }
         
-        return { weights: originalWeights, accuracy: correct / m };
+        // === 統計情報の算出 ===
+        let k_params = n + 1; 
+        let logLikelihood = 0; let p_hat = [];
+        let X_design = [];
+        
+        for(let i=0; i<m; i++) {
+            X_design.push([1, ...X[i]]);
+            let z = origBias;
+            for(let j=0; j<n; j++) z += origWeights[j] * X[i][j];
+            let prob = Math.max(1e-15, Math.min(1 - 1e-15, sigmoid(z))); // 0割防止
+            p_hat.push(prob);
+            logLikelihood += y[i] * Math.log(prob) + (1 - y[i]) * Math.log(1 - prob);
+        }
+        
+        let y_mean = y.reduce((a, b) => a + b, 0) / m;
+        let nullLogLikelihood = 0;
+        for(let i=0; i<m; i++) nullLogLikelihood += y[i] * Math.log(y_mean) + (1 - y[i]) * Math.log(1 - y_mean);
+        
+        // ヘッセ行列 (H = X^T W X)
+        let H = Array(k_params).fill(0).map(() => Array(k_params).fill(0));
+        for(let i=0; i<m; i++) {
+            let w = p_hat[i] * (1 - p_hat[i]);
+            for(let row=0; row<k_params; row++) {
+                for(let col=0; col<k_params; col++) {
+                    H[row][col] += X_design[i][row] * X_design[i][col] * w;
+                }
+            }
+        }
+        
+        // 標準誤差、p値などの計算
+        let covMatrix = invertMatrix(H);
+        let stdErrors = Array(k_params).fill(null);
+        let pValues = Array(k_params).fill(null);
+        let zValues = Array(k_params).fill(null);
+        let ci95 = Array(k_params).fill(null);
+        let allParams = [origBias, ...origWeights];
+        
+        if (covMatrix) {
+            for(let j=0; j<k_params; j++) {
+                let se = Math.sqrt(Math.max(0, covMatrix[j][j]));
+                stdErrors[j] = se;
+                let z = allParams[j] / (se || 1e-9);
+                zValues[j] = z;
+                pValues[j] = 2 * (1 - normalCDF(Math.abs(z)));
+                ci95[j] = { lower: allParams[j] - 1.96 * se, upper: allParams[j] + 1.96 * se };
+            }
+        }
+        
+        let correct = 0;
+        for(let i=0; i<m; i++) if ((p_hat[i] >= 0.5 ? 1 : 0) === y[i]) correct++;
+        
+        return { 
+            weights: origWeights, bias: origBias, accuracy: correct / m,
+            stdErrors, zValues, pValues, ci95, logLikelihood,
+            aic: 2 * k_params - 2 * logLikelihood,
+            nullDeviance: -2 * nullLogLikelihood, residualDeviance: -2 * logLikelihood,
+            pseudoR2: 1 - (logLikelihood / nullLogLikelihood),
+            dfNull: m - 1, dfResid: m - k_params
+        };
+    }
+    // ▲▲▲ ガチ統計演算ロジック終了 ▲▲▲
+
+    function getSignificanceMark(p) {
+        if(p === null) return "";
+        if(p < 0.001) return "***";
+        if(p < 0.01) return "**";
+        if(p < 0.05) return "*";
+        if(p < 0.1) return ".";
+        return "";
     }
 
-    // 分析スタート
     document.getElementById('analyzeBtn').addEventListener('click', () => {
-        if (currentData.length === 0) return alert("データがありません！CSVを入れるかサンプルを選んでください。");
+        if (currentData.length === 0) return alert("データがありません！");
 
         document.getElementById('analyzeBtn').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
@@ -301,93 +367,121 @@
             const y = currentData.map(row => row[row.length - 1]);
             const featureNames = currentColumns.slice(0, -1);
 
-            const result = runLogisticRegression(X, y);
-            modelAccuracy = result.accuracy;
+            const res = runLogisticRegression(X, y);
 
             let importanceData = featureNames.map((name, i) => {
-                let coef = result.weights[i];
-                return { name: name, coef: coef, oddsRatio: Math.exp(coef) };
+                return { name: name, coef: res.weights[i] };
             });
-
-            // 影響力が大きい順（絶対値）に並び替え
             importanceData.sort((a, b) => Math.abs(b.coef) - Math.abs(a.coef));
-            
-            // 効果がプラス（オッズ比が1以上）の要素から最も強力なものを探す
-            let topPositiveFactor = importanceData.find(d => d.coef > 0);
-            topFactorName = topPositiveFactor ? topPositiveFactor.name : importanceData[0].name;
+            let topPositive = importanceData.find(d => d.coef > 0);
+            topFactorName = topPositive ? topPositive.name : importanceData[0].name;
 
             document.getElementById('conclusion').innerHTML = `
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🎉 AIによる診断が完了しました！</div>
-                お店のファンを増やす一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> です！<br>
-                明日からこの要素を意識して接客・サービスを行うと、リピート率の向上が期待できます。
+                お店のファンを増やす一番の鍵は、ズバリ <span class="marker">『${topFactorName}』</span> です！
             `;
             
             drawChart(importanceData.map(d => d.name), importanceData.map(d => d.coef));
 
-            document.getElementById('accuracyText').innerHTML = `<strong>■ AIの予測正解率:</strong> ${(modelAccuracy * 100).toFixed(1)}% (この数字が高いほど信頼できます)`;
-            
-            let tableHtml = `<tr><th>分析要素</th><th>リピート倍率(オッズ比)</th><th>評価</th></tr>`;
-            importanceData.forEach(d => {
-                let evalText = d.oddsRatio > 1.2 ? "💮 超重要" : d.oddsRatio < 0.8 ? "⚠️ 逆効果かも" : "➖ 普通";
-                tableHtml += `<tr><td>${d.name}</td><td><strong>${d.oddsRatio.toFixed(2)}倍</strong></td><td>${evalText}</td></tr>`;
+            // ▼▼▼ ガチ統計出力用のHTML生成 ▼▼▼
+            let eqText = `logit(p) = ${res.bias.toFixed(4)} <br>`;
+            featureNames.forEach((name, i) => {
+                let sign = res.weights[i] >= 0 ? "+" : "-";
+                eqText += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sign} ${Math.abs(res.weights[i]).toFixed(4)} × ${name} <br>`;
             });
-            document.getElementById('evidenceTable').innerHTML = tableHtml;
+
+            let statHtml = `
+                <div class="equation"><strong>[回帰モデル（ロジット関数）]</strong><br>${eqText}</div>
+                <table class="stat-table">
+                    <thead>
+                        <tr>
+                            <th>変数 (Features)</th><th>推定値 (β)</th><th>標準誤差 (SE)</th>
+                            <th>z値</th><th>p値 (Pr>|z|)</th><th>オッズ比</th><th>OR 95% CI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // 切片
+            statHtml += `<tr><td>(Intercept)</td><td>${res.bias.toFixed(4)}</td>
+                <td>${res.stdErrors[0] ? res.stdErrors[0].toFixed(4) : "NaN"}</td>
+                <td>${res.zValues[0] ? res.zValues[0].toFixed(4) : "NaN"}</td>
+                <td>${res.pValues[0] ? res.pValues[0].toFixed(4) : "NaN"} ${getSignificanceMark(res.pValues[0])}</td>
+                <td>-</td><td>-</td></tr>`;
+
+            // 各変数
+            featureNames.forEach((name, i) => {
+                let j = i + 1;
+                let w = res.weights[i];
+                let se = res.stdErrors[j];
+                let or = Math.exp(w);
+                let ci_low = res.ci95[j] ? Math.exp(res.ci95[j].lower).toFixed(2) : "NaN";
+                let ci_up  = res.ci95[j] ? Math.exp(res.ci95[j].upper).toFixed(2) : "NaN";
+                
+                statHtml += `<tr><td>${name}</td><td>${w.toFixed(4)}</td>
+                    <td>${se ? se.toFixed(4) : "NaN"}</td>
+                    <td>${res.zValues[j] ? res.zValues[j].toFixed(4) : "NaN"}</td>
+                    <td>${res.pValues[j] ? res.pValues[j].toFixed(4) : "NaN"} ${getSignificanceMark(res.pValues[j])}</td>
+                    <td><strong style="color:#d32f2f;">${or.toFixed(2)}</strong></td>
+                    <td>[${ci_low}, ${ci_up}]</td></tr>`;
+            });
+            
+            statHtml += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 10px; line-height: 1.6;">
+                    Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1<br><br>
+                    <strong>[モデルの評価指標]</strong><br>
+                    Null Deviance: ${res.nullDeviance.toFixed(2)} (df = ${res.dfNull})<br>
+                    Residual Deviance: ${res.residualDeviance.toFixed(2)} (df = ${res.dfResid})<br>
+                    AIC: ${res.aic.toFixed(2)}<br>
+                    McFadden's Pseudo R²: ${res.pseudoR2.toFixed(4)}<br>
+                    Model Accuracy: ${(res.accuracy * 100).toFixed(1)}%
+                </div>
+            `;
+            document.getElementById('statDetails').innerHTML = statHtml;
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('analyzeBtn').style.display = 'block';
             document.getElementById('resultArea').style.display = 'block';
 
-        }, 800); // AIが考えている風の演出
+        }, 1200);
     });
 
-    // グラフの描画
     function drawChart(labels, data) {
         const ctx = document.getElementById('myChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
-        
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'リピートへの影響力（右に伸びるほど効果あり！）',
+                    label: 'リピートへの影響力',
                     data: data,
                     backgroundColor: data.map(v => v > 0 ? 'rgba(255, 122, 154, 0.6)' : 'rgba(100, 149, 237, 0.6)'),
                     borderColor: data.map(v => v > 0 ? '#FF7A9A' : '#6495ED'),
                     borderWidth: 1
                 }]
             },
-            options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true } } }
+            options: { indexAxis: 'y', responsive: true }
         });
     }
 
-    // 📄 PDFダウンロード処理
     document.getElementById('downloadBtn').addEventListener('click', () => {
         const code = document.getElementById('passcodeInput').value;
-        
-        // 簡易パスコード（定期的に変更して運用してください）
         if (code === "2026BASE") {
-            alert("✅ 決済が確認できました！数秒後にPDFレポートがダウンロードされます。");
-            
-            // PDF化したい要素を取得
+            alert("✅ 決済が確認できました！PDFレポートをダウンロードします。");
             const element = document.getElementById('pdfContentArea');
-            
-            // PDF出力の設定
-            const opt = {
-                margin:       10,
-                filename:     'AI_Repeat_Report.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            
-            // html2pdfライブラリで要素をPDF化して保存
-            html2pdf().set(opt).from(element).save();
+            html2pdf().set({
+                margin: 10, filename: 'AI_Repeat_Report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
         } else {
-            alert("💦 パスコードが間違っています。Squareの決済完了画面をご確認ください。");
+            alert("💦 パスコードが間違っています。");
         }
     });
-
 </script>
 
 </body>

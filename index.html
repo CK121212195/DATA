@@ -3,25 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <title>AIリピート診断アプリ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.css"/>
+    <!-- stliteの最新安定版を読み込み -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.css"/>
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.1/build/stlite.js"></script>
     <script>
       stlite.mount({
         requirements: ["pandas", "numpy", "scikit-learn"],
-        mainScriptData: `
+        // 最新の仕様：仮想的にファイルシステムを作る書き方に変更
+        entrypoint: "streamlit_app.py",
+        files: {
+          "streamlit_app.py": `
 import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import time
 
-# 画面の基本設定（スマホでも綺麗に見えるように）
+# 画面の基本設定
 st.set_page_config(page_title="AIリピート診断", page_icon="🍽️", layout="centered")
 
-# バカでもわかるタイトルと説明
+# タイトル
 st.title("🍽️ 常連客は誰だ？ AIリピート診断")
 st.write("お店のデータを入れるだけで、「どんなお客さんがリピートしやすいか」をAIがズバッと判定します。難しい統計の知識は一切不要です！")
 
@@ -39,7 +43,7 @@ if "サンプル" in data_source:
         "デザート注文(あり=1)": np.random.choice([0, 1], 100),
         "クーポン利用(あり=1)": np.random.choice([0, 1], 100),
     })
-    # デザート注文がリピートに強く影響するように設定した裏ロジック
+    # デザート注文がリピートに強く影響する設定
     prob = 1 / (1 + np.exp(-(-2 + 0.001*df["客単価(円)"] + 2.0*df["デザート注文(あり=1)"] + 0.5*df["クーポン利用(あり=1)"])))
     df["次回来店したか(はい=1)"] = (np.random.rand(100) < prob).astype(int)
     st.dataframe(df.head(3), use_container_width=True)
@@ -52,12 +56,11 @@ else:
 
 if df is not None:
     st.markdown("### 2. AI診断（無料プレビュー）")
-    # ここが「1タップ」の仕掛け
     if st.button("🔮 ワンタップで分析スタート！", type="primary"):
         with st.spinner("AIがデータを読み解いています... (初回のみ10秒ほどかかります)"):
-            time.sleep(2) # 分析している感を出す演出
+            time.sleep(2)
             
-            # ロジスティック回帰分析の実行（ブラウザ上で完結！）
+            # ロジスティック回帰分析
             X = df.drop("次回来店したか(はい=1)", axis=1)
             y = df["次回来店したか(はい=1)"]
             model = LogisticRegression()
@@ -67,12 +70,12 @@ if df is not None:
             importance = pd.DataFrame({"要素": X.columns, "影響度": coef})
             importance = importance.sort_values(by="影響度", ascending=False)
             
-            # 結果をブラウザのメモリ(session_state)に保存
+            # 結果をセッションに保存
             st.session_state["analyzed"] = True
             st.session_state["top_factor"] = importance.iloc[0]["要素"]
             st.session_state["importance"] = importance
 
-# 分析結果の表示エリア
+# 分析結果の表示
 if st.session_state.get("analyzed"):
     top = st.session_state["top_factor"]
     st.success(f"🎉 分析完了！一番リピートに繋がっているのはズバリ **『{top}』** です！")
@@ -84,18 +87,24 @@ if st.session_state.get("analyzed"):
     st.markdown("### 🔒 3. プロ仕様の詳細レポートを発行 (500円)")
     st.write("銀行の融資資料や、スタッフとの作戦会議にそのまま使える「具体的な改善アクション」付きの詳細レポートを発行します。")
     
-    # Square決済への導線（ダミーリンク）
     st.link_button("💳 Squareで決済してパスコードを入手（500円）", "https://square.link/YOUR_DUMMY_LINK")
     st.caption("※ 決済完了画面に表示される「パスコード」を下に入力してください。")
     
-    # マネタイズの要：パスコード入力
     passcode = st.text_input("🔑 パスコードを入力", type="password")
     
     if passcode == "2026BASE":
         st.success("✅ 決済が確認できました！ありがとうございます。")
         
-        # 本来はPDF生成ライブラリを使いますが、試作品としてテキストファイルを生成
-        report_text = f"【AIリピート診断 詳細レポート】\n\n■ 結論:\nあなたの店舗で最もリピートに貢献している要素は「{top}」です。\n\n■ 明日からのアクション:\nこの要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、顧客への声掛けを徹底してください。\n\n※このデータはブラウザ上で安全に計算されました。"
+        # レポート用テキスト（エラー回避のためPythonの三連クォートに変更）
+        report_text = f"""【AIリピート診断 詳細レポート】
+
+■ 結論:
+あなたの店舗で最もリピートに貢献している要素は「{top}」です。
+
+■ 明日からのアクション:
+この要素を伸ばすためのキャンペーン（例：デザート注文時のドリンク無料など）を企画し、顧客への声掛けを徹底してください。
+
+※このデータはブラウザ上で安全に計算されました。"""
         
         st.download_button(
             label="📄 詳細レポートをダウンロード",
@@ -107,6 +116,7 @@ if st.session_state.get("analyzed"):
     elif passcode != "":
         st.error("パスコードが間違っています。")
 `
+        }
       }, document.getElementById("root"));
     </script>
   </body>
